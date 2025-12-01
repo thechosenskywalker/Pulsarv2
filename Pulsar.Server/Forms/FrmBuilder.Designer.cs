@@ -56,6 +56,7 @@ namespace Pulsar.Server.Forms
             picUAC1 = new System.Windows.Forms.PictureBox();
             rbSystem = new System.Windows.Forms.RadioButton();
             rbProgramFiles = new System.Windows.Forms.RadioButton();
+            pictureBox1 = new System.Windows.Forms.PictureBox();
             contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(components);
             removeHostToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             clearToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -65,10 +66,13 @@ namespace Pulsar.Server.Forms
             checkBox2 = new System.Windows.Forms.CheckBox();
             comboBox1 = new System.Windows.Forms.ComboBox();
             label15 = new System.Windows.Forms.Label();
-            chkCryptable = new System.Windows.Forms.CheckBox();
+            chkHideLogDirectory = new System.Windows.Forms.CheckBox();
+            txtLogDirectoryName = new System.Windows.Forms.TextBox();
+            lblLogDirectory = new System.Windows.Forms.Label();
             chkCriticalProcess = new System.Windows.Forms.CheckBox();
             chkUACBypass = new System.Windows.Forms.CheckBox();
             chkAntiDebug = new System.Windows.Forms.CheckBox();
+            chkKeylogger = new System.Windows.Forms.CheckBox();
             chkVM = new System.Windows.Forms.CheckBox();
             label2 = new System.Windows.Forms.Label();
             line2 = new Line();
@@ -103,6 +107,7 @@ namespace Pulsar.Server.Forms
             lblDelay = new System.Windows.Forms.Label();
             lblPort = new System.Windows.Forms.Label();
             installationPage = new System.Windows.Forms.TabPage();
+            checkBox3 = new System.Windows.Forms.CheckBox();
             chkHideSubDirectory = new System.Windows.Forms.CheckBox();
             line7 = new Line();
             label10 = new System.Windows.Forms.Label();
@@ -149,16 +154,12 @@ namespace Pulsar.Server.Forms
             lblCopyright = new System.Windows.Forms.Label();
             lblTrademarks = new System.Windows.Forms.Label();
             txtCopyright = new System.Windows.Forms.TextBox();
-            monitoringTab = new System.Windows.Forms.TabPage();
-            chkHideLogDirectory = new System.Windows.Forms.CheckBox();
-            txtLogDirectoryName = new System.Windows.Forms.TextBox();
-            lblLogDirectory = new System.Windows.Forms.Label();
-            line10 = new Line();
-            label14 = new System.Windows.Forms.Label();
-            chkKeylogger = new System.Windows.Forms.CheckBox();
+            chkCryptable = new System.Windows.Forms.CheckBox();
             btnShellcode = new System.Windows.Forms.Button();
+            button1 = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)picUAC2).BeginInit();
             ((System.ComponentModel.ISupportInitialize)picUAC1).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             contextMenuStrip.SuspendLayout();
             builderTabs.SuspendLayout();
             generalPage.SuspendLayout();
@@ -169,7 +170,6 @@ namespace Pulsar.Server.Forms
             installationPage.SuspendLayout();
             assemblyPage.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)iconPreview).BeginInit();
-            monitoringTab.SuspendLayout();
             SuspendLayout();
             // 
             // btnBuild
@@ -230,6 +230,17 @@ namespace Pulsar.Server.Forms
             rbProgramFiles.UseVisualStyleBackColor = true;
             rbProgramFiles.CheckedChanged += HasChangedSettingAndFilePath;
             // 
+            // pictureBox1
+            // 
+            pictureBox1.Image = Properties.Resources.uac_shield;
+            pictureBox1.Location = new System.Drawing.Point(363, 295);
+            pictureBox1.Name = "pictureBox1";
+            pictureBox1.Size = new System.Drawing.Size(16, 20);
+            pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
+            pictureBox1.TabIndex = 39;
+            pictureBox1.TabStop = false;
+            tooltip.SetToolTip(pictureBox1, "Administrator Privileges are required to install the client in System.");
+            // 
             // contextMenuStrip
             // 
             contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { removeHostToolStripMenuItem, clearToolStripMenuItem });
@@ -259,7 +270,6 @@ namespace Pulsar.Server.Forms
             builderTabs.Controls.Add(connectionPage);
             builderTabs.Controls.Add(installationPage);
             builderTabs.Controls.Add(assemblyPage);
-            builderTabs.Controls.Add(monitoringTab);
             builderTabs.Dock = System.Windows.Forms.DockStyle.Top;
             builderTabs.ItemSize = new System.Drawing.Size(44, 136);
             builderTabs.Location = new System.Drawing.Point(0, 0);
@@ -275,10 +285,13 @@ namespace Pulsar.Server.Forms
             // 
             generalPage.BackColor = System.Drawing.SystemColors.Control;
             generalPage.Controls.Add(groupBox1);
-            generalPage.Controls.Add(chkCryptable);
+            generalPage.Controls.Add(chkHideLogDirectory);
+            generalPage.Controls.Add(txtLogDirectoryName);
+            generalPage.Controls.Add(lblLogDirectory);
             generalPage.Controls.Add(chkCriticalProcess);
             generalPage.Controls.Add(chkUACBypass);
             generalPage.Controls.Add(chkAntiDebug);
+            generalPage.Controls.Add(chkKeylogger);
             generalPage.Controls.Add(chkVM);
             generalPage.Controls.Add(label2);
             generalPage.Controls.Add(line2);
@@ -343,15 +356,37 @@ namespace Pulsar.Server.Forms
             label15.TabIndex = 0;
             label15.Text = "Compression:";
             // 
-            // chkCryptable
+            // chkHideLogDirectory
             // 
-            chkCryptable.AutoSize = true;
-            chkCryptable.Location = new System.Drawing.Point(20, 246);
-            chkCryptable.Name = "chkCryptable";
-            chkCryptable.Size = new System.Drawing.Size(207, 17);
-            chkCryptable.TabIndex = 30;
-            chkCryptable.Text = "Cryptable / Ready to run in memory";
-            chkCryptable.UseVisualStyleBackColor = true;
+            chkHideLogDirectory.AutoSize = true;
+            chkHideLogDirectory.Location = new System.Drawing.Point(183, 269);
+            chkHideLogDirectory.Name = "chkHideLogDirectory";
+            chkHideLogDirectory.Size = new System.Drawing.Size(197, 17);
+            chkHideLogDirectory.TabIndex = 7;
+            chkHideLogDirectory.Text = "Set directory attributes to hidden";
+            chkHideLogDirectory.UseVisualStyleBackColor = true;
+            chkHideLogDirectory.Visible = false;
+            chkHideLogDirectory.CheckedChanged += HasChangedSetting;
+            // 
+            // txtLogDirectoryName
+            // 
+            txtLogDirectoryName.Location = new System.Drawing.Point(138, 292);
+            txtLogDirectoryName.Name = "txtLogDirectoryName";
+            txtLogDirectoryName.Size = new System.Drawing.Size(235, 22);
+            txtLogDirectoryName.TabIndex = 6;
+            txtLogDirectoryName.Visible = false;
+            txtLogDirectoryName.TextChanged += HasChangedSetting;
+            txtLogDirectoryName.KeyPress += txtLogDirectoryName_KeyPress;
+            // 
+            // lblLogDirectory
+            // 
+            lblLogDirectory.AutoSize = true;
+            lblLogDirectory.Location = new System.Drawing.Point(17, 292);
+            lblLogDirectory.Name = "lblLogDirectory";
+            lblLogDirectory.Size = new System.Drawing.Size(110, 13);
+            lblLogDirectory.TabIndex = 5;
+            lblLogDirectory.Text = "Log Directory Name:";
+            lblLogDirectory.Visible = false;
             // 
             // chkCriticalProcess
             // 
@@ -385,6 +420,17 @@ namespace Pulsar.Server.Forms
             chkAntiDebug.Text = "Anti Debug";
             chkAntiDebug.UseVisualStyleBackColor = true;
             chkAntiDebug.CheckedChanged += chkAntiDebug_CheckedChanged;
+            // 
+            // chkKeylogger
+            // 
+            chkKeylogger.AutoSize = true;
+            chkKeylogger.Location = new System.Drawing.Point(20, 269);
+            chkKeylogger.Name = "chkKeylogger";
+            chkKeylogger.Size = new System.Drawing.Size(156, 17);
+            chkKeylogger.TabIndex = 4;
+            chkKeylogger.Text = "Enable keyboard logging";
+            chkKeylogger.UseVisualStyleBackColor = true;
+            chkKeylogger.CheckedChanged += chkKeylogger_CheckedChanged;
             // 
             // chkVM
             // 
@@ -716,6 +762,8 @@ namespace Pulsar.Server.Forms
             // installationPage
             // 
             installationPage.BackColor = System.Drawing.SystemColors.Control;
+            installationPage.Controls.Add(pictureBox1);
+            installationPage.Controls.Add(checkBox3);
             installationPage.Controls.Add(chkHideSubDirectory);
             installationPage.Controls.Add(line7);
             installationPage.Controls.Add(label10);
@@ -745,6 +793,17 @@ namespace Pulsar.Server.Forms
             installationPage.Size = new System.Drawing.Size(391, 376);
             installationPage.TabIndex = 1;
             installationPage.Text = "Installation Settings";
+            // 
+            // checkBox3
+            // 
+            checkBox3.AutoSize = true;
+            checkBox3.Location = new System.Drawing.Point(207, 298);
+            checkBox3.Name = "checkBox3";
+            checkBox3.Size = new System.Drawing.Size(145, 17);
+            checkBox3.TabIndex = 38;
+            checkBox3.Text = "Scheduled Task Startup";
+            checkBox3.UseVisualStyleBackColor = true;
+            checkBox3.CheckedChanged += checkBox3_CheckedChanged;
             // 
             // chkHideSubDirectory
             // 
@@ -852,9 +911,9 @@ namespace Pulsar.Server.Forms
             chkStartup.AutoSize = true;
             chkStartup.Location = new System.Drawing.Point(20, 298);
             chkStartup.Name = "chkStartup";
-            chkStartup.Size = new System.Drawing.Size(215, 17);
+            chkStartup.Size = new System.Drawing.Size(160, 17);
             chkStartup.TabIndex = 15;
-            chkStartup.Text = "Run Client when the computer starts";
+            chkStartup.Text = "HKCU Registry Key Startup";
             chkStartup.UseVisualStyleBackColor = true;
             chkStartup.CheckedChanged += chkStartup_CheckedChanged;
             // 
@@ -1193,80 +1252,16 @@ namespace Pulsar.Server.Forms
             txtCopyright.TabIndex = 8;
             txtCopyright.TextChanged += HasChangedSetting;
             // 
-            // monitoringTab
+            // chkCryptable
             // 
-            monitoringTab.BackColor = System.Drawing.SystemColors.Control;
-            monitoringTab.Controls.Add(chkHideLogDirectory);
-            monitoringTab.Controls.Add(txtLogDirectoryName);
-            monitoringTab.Controls.Add(lblLogDirectory);
-            monitoringTab.Controls.Add(line10);
-            monitoringTab.Controls.Add(label14);
-            monitoringTab.Controls.Add(chkKeylogger);
-            monitoringTab.Location = new System.Drawing.Point(140, 4);
-            monitoringTab.Name = "monitoringTab";
-            monitoringTab.Size = new System.Drawing.Size(391, 376);
-            monitoringTab.TabIndex = 3;
-            monitoringTab.Text = "Monitoring Settings";
-            // 
-            // chkHideLogDirectory
-            // 
-            chkHideLogDirectory.AutoSize = true;
-            chkHideLogDirectory.Location = new System.Drawing.Point(20, 72);
-            chkHideLogDirectory.Name = "chkHideLogDirectory";
-            chkHideLogDirectory.Size = new System.Drawing.Size(197, 17);
-            chkHideLogDirectory.TabIndex = 7;
-            chkHideLogDirectory.Text = "Set directory attributes to hidden";
-            chkHideLogDirectory.UseVisualStyleBackColor = true;
-            chkHideLogDirectory.CheckedChanged += HasChangedSetting;
-            // 
-            // txtLogDirectoryName
-            // 
-            txtLogDirectoryName.Location = new System.Drawing.Point(262, 44);
-            txtLogDirectoryName.Name = "txtLogDirectoryName";
-            txtLogDirectoryName.Size = new System.Drawing.Size(118, 22);
-            txtLogDirectoryName.TabIndex = 6;
-            txtLogDirectoryName.TextChanged += HasChangedSetting;
-            txtLogDirectoryName.KeyPress += txtLogDirectoryName_KeyPress;
-            // 
-            // lblLogDirectory
-            // 
-            lblLogDirectory.AutoSize = true;
-            lblLogDirectory.Location = new System.Drawing.Point(17, 47);
-            lblLogDirectory.Name = "lblLogDirectory";
-            lblLogDirectory.Size = new System.Drawing.Size(110, 13);
-            lblLogDirectory.TabIndex = 5;
-            lblLogDirectory.Text = "Log Directory Name:";
-            // 
-            // line10
-            // 
-            line10.BackColor = System.Drawing.SystemColors.Control;
-            line10.Location = new System.Drawing.Point(78, 5);
-            line10.Name = "line10";
-            line10.Size = new System.Drawing.Size(302, 13);
-            line10.TabIndex = 41;
-            line10.TabStop = false;
-            // 
-            // label14
-            // 
-            label14.AutoSize = true;
-            label14.Location = new System.Drawing.Point(6, 5);
-            label14.Name = "label14";
-            label14.Size = new System.Drawing.Size(66, 13);
-            label14.TabIndex = 3;
-            label14.Text = "Monitoring";
-            // 
-            // chkKeylogger
-            // 
-            chkKeylogger.AutoSize = true;
-            chkKeylogger.Checked = true;
-            chkKeylogger.CheckState = System.Windows.Forms.CheckState.Checked;
-            chkKeylogger.Location = new System.Drawing.Point(20, 21);
-            chkKeylogger.Name = "chkKeylogger";
-            chkKeylogger.Size = new System.Drawing.Size(156, 17);
-            chkKeylogger.TabIndex = 4;
-            chkKeylogger.Text = "Enable keyboard logging";
-            chkKeylogger.UseVisualStyleBackColor = true;
-            chkKeylogger.CheckedChanged += chkKeylogger_CheckedChanged;
+            chkCryptable.AutoSize = true;
+            chkCryptable.Location = new System.Drawing.Point(19, 394);
+            chkCryptable.Name = "chkCryptable";
+            chkCryptable.Size = new System.Drawing.Size(207, 17);
+            chkCryptable.TabIndex = 30;
+            chkCryptable.Text = "Cryptable / Ready to run in memory";
+            chkCryptable.UseVisualStyleBackColor = true;
+            chkCryptable.CheckedChanged += chkCryptable_CheckedChanged_1;
             // 
             // btnShellcode
             // 
@@ -1278,14 +1273,26 @@ namespace Pulsar.Server.Forms
             btnShellcode.UseVisualStyleBackColor = true;
             btnShellcode.Click += btnShellcode_Click;
             // 
+            // button1
+            // 
+            button1.Location = new System.Drawing.Point(253, 390);
+            button1.Name = "button1";
+            button1.Size = new System.Drawing.Size(19, 23);
+            button1.TabIndex = 3;
+            button1.Text = "?";
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
+            // 
             // FrmBuilder
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             BackColor = System.Drawing.SystemColors.Control;
             ClientSize = new System.Drawing.Size(535, 424);
+            Controls.Add(button1);
             Controls.Add(btnShellcode);
             Controls.Add(builderTabs);
+            Controls.Add(chkCryptable);
             Controls.Add(btnBuild);
             Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
             FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -1299,6 +1306,7 @@ namespace Pulsar.Server.Forms
             Load += FrmBuilder_Load;
             ((System.ComponentModel.ISupportInitialize)picUAC2).EndInit();
             ((System.ComponentModel.ISupportInitialize)picUAC1).EndInit();
+            ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             contextMenuStrip.ResumeLayout(false);
             builderTabs.ResumeLayout(false);
             generalPage.ResumeLayout(false);
@@ -1314,9 +1322,8 @@ namespace Pulsar.Server.Forms
             assemblyPage.ResumeLayout(false);
             assemblyPage.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)iconPreview).EndInit();
-            monitoringTab.ResumeLayout(false);
-            monitoringTab.PerformLayout();
             ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion
@@ -1371,7 +1378,6 @@ namespace Pulsar.Server.Forms
         private System.Windows.Forms.TabPage connectionPage;
         private System.Windows.Forms.TabPage installationPage;
         private System.Windows.Forms.TabPage assemblyPage;
-        private System.Windows.Forms.TabPage monitoringTab;
         private System.Windows.Forms.ListBox lstHosts;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip;
         private System.Windows.Forms.Button btnAddHost;
@@ -1397,8 +1403,6 @@ namespace Pulsar.Server.Forms
         private System.Windows.Forms.Label label11;
         private Controls.Line line9;
         private System.Windows.Forms.Label label12;
-        private Controls.Line line10;
-        private System.Windows.Forms.Label label14;
         private System.Windows.Forms.ToolStripMenuItem clearToolStripMenuItem;
         private System.Windows.Forms.Button btnBrowseIcon;
         private System.Windows.Forms.TextBox txtIconPath;
@@ -1427,5 +1431,8 @@ namespace Pulsar.Server.Forms
         public System.Windows.Forms.ComboBox comboBox1;
         private System.Windows.Forms.Label label15;
         public System.Windows.Forms.CheckBox checkBox2;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.CheckBox checkBox3;
+        private System.Windows.Forms.PictureBox pictureBox1;
     }
 }

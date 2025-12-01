@@ -271,6 +271,15 @@ namespace Pulsar.Server.Models
                 Save();
             }
         }
+        public bool EnableScheduledTask
+        {
+            get => _model.EnableScheduledTask;
+            set
+            {
+                _model.EnableScheduledTask = value;
+                Save();
+            }
+        }
 
         public string ProductName
         {

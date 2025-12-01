@@ -10,7 +10,7 @@ namespace Pulsar.Server.Forms
 {
     public partial class FrmAbout : Form
     {
-        private readonly string _repositoryUrl = @"https://github.com/Quasar-Continuation/PulsarK";
+        private readonly string _repositoryUrl = @"https://github.com/Quasar-Continuation/Poopsar";
         private readonly string _telegramUrl = @"https://t.me/novashadowisgay";
         private const string ContributorsMessage = """
 - [KingKDot](https://github.com/KingKDot) – Lead Developer
@@ -25,7 +25,7 @@ namespace Pulsar.Server.Forms
 - [cpores](https://github.com/vahrervert) – VNC Drawing, Favorites, Overlays
 - [Rishie](https://github.com/rishieissocool) – Gatherer Options
 - [jungsuxx](https://github.com/jungsuxx) – HVNC Input & Code Simplification
-- [MOOM aka my lebron](https://github.com/moom825) – Inspiration & Batch Obfuscation
+- [Moom825](https://github.com/moom825) – Inspiration & Batch Obfuscation
 - [Poli](https://github.com/paulmaster59) – Discord Server & Custom Pulsar Crypter
 - [Deadman](https://github.com/DeadmanLabs) – Memory Dumping and Shellcode Builder
 - [User76](https://github.com/user76-real) – Networking Optimizations
@@ -44,7 +44,7 @@ namespace Pulsar.Server.Forms
 
             lnkGithubPage.Links.Add(new LinkLabel.Link { LinkData = _repositoryUrl });
             lnkTelegram.Links.Add(new LinkLabel.Link { LinkData = _telegramUrl });
-            lnkCredits.Links.Add(new LinkLabel.Link { LinkData = "https://github.com/Quasar-Continuation/PulsarK/tree/main/Licenses" });
+            lnkCredits.Links.Add(new LinkLabel.Link { LinkData = "https://github.com/Quasar-Continuation/Poopsar/tree/main/Licenses" });
         }
 
         private void lnkGithubPage_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
@@ -150,7 +150,7 @@ namespace Pulsar.Server.Forms
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "https://github.com/Quasar-Continuation/PulsarK",
+                    FileName = "https://github.com/Quasar-Continuation/Poopsar",
                     UseShellExecute = true
                 });
             }

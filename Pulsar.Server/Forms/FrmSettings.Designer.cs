@@ -61,7 +61,7 @@ namespace Pulsar.Server.Forms
             // btnSave
             // 
             btnSave.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            btnSave.Location = new System.Drawing.Point(227, 558);
+            btnSave.Location = new System.Drawing.Point(227, 543);
             btnSave.Name = "btnSave";
             btnSave.Size = new System.Drawing.Size(121, 23);
             btnSave.TabIndex = 19;
@@ -129,7 +129,7 @@ namespace Pulsar.Server.Forms
             // btnCancel
             // 
             btnCancel.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            btnCancel.Location = new System.Drawing.Point(12, 558);
+            btnCancel.Location = new System.Drawing.Point(12, 543);
             btnCancel.Name = "btnCancel";
             btnCancel.Size = new System.Drawing.Size(121, 23);
             btnCancel.TabIndex = 18;
@@ -143,7 +143,7 @@ namespace Pulsar.Server.Forms
             chkUseUpnp.AutoSize = true;
             chkUseUpnp.Location = new System.Drawing.Point(12, 214);
             chkUseUpnp.Name = "chkUseUpnp";
-            chkUseUpnp.Size = new System.Drawing.Size(250, 17);
+            chkUseUpnp.Size = new System.Drawing.Size(249, 17);
             chkUseUpnp.TabIndex = 8;
             chkUseUpnp.Text = "Try to automatically forward the port (UPnP)";
             chkUseUpnp.UseVisualStyleBackColor = true;
@@ -152,12 +152,13 @@ namespace Pulsar.Server.Forms
             // 
             chkShowTooltip.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             chkShowTooltip.AutoSize = true;
-            chkShowTooltip.Location = new System.Drawing.Point(12, 237);
+            chkShowTooltip.Location = new System.Drawing.Point(-78, 364);
             chkShowTooltip.Name = "chkShowTooltip";
             chkShowTooltip.Size = new System.Drawing.Size(268, 17);
             chkShowTooltip.TabIndex = 9;
             chkShowTooltip.Text = "Show tooltip on client with system information";
             chkShowTooltip.UseVisualStyleBackColor = true;
+            chkShowTooltip.Visible = false;
             // 
             // chkIPv6Support
             // 
@@ -187,7 +188,7 @@ namespace Pulsar.Server.Forms
             // 
             chkEventLog.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             chkEventLog.AutoSize = true;
-            chkEventLog.Location = new System.Drawing.Point(12, 260);
+            chkEventLog.Location = new System.Drawing.Point(12, 235);
             chkEventLog.Name = "chkEventLog";
             chkEventLog.Size = new System.Drawing.Size(186, 17);
             chkEventLog.TabIndex = 21;
@@ -212,9 +213,9 @@ namespace Pulsar.Server.Forms
             // 
             chkTelegramNotis.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             chkTelegramNotis.AutoSize = true;
-            chkTelegramNotis.Location = new System.Drawing.Point(12, 306);
+            chkTelegramNotis.Location = new System.Drawing.Point(12, 281);
             chkTelegramNotis.Name = "chkTelegramNotis";
-            chkTelegramNotis.Size = new System.Drawing.Size(179, 17);
+            chkTelegramNotis.Size = new System.Drawing.Size(178, 17);
             chkTelegramNotis.TabIndex = 23;
             chkTelegramNotis.Text = "Enable Telegram Notifications";
             chkTelegramNotis.UseVisualStyleBackColor = true;
@@ -224,7 +225,7 @@ namespace Pulsar.Server.Forms
             // 
             txtTelegramToken.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             txtTelegramToken.Enabled = false;
-            txtTelegramToken.Location = new System.Drawing.Point(70, 329);
+            txtTelegramToken.Location = new System.Drawing.Point(70, 304);
             txtTelegramToken.Name = "txtTelegramToken";
             txtTelegramToken.Size = new System.Drawing.Size(278, 22);
             txtTelegramToken.TabIndex = 24;
@@ -235,9 +236,9 @@ namespace Pulsar.Server.Forms
             label1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             label1.AutoSize = true;
             label1.Enabled = false;
-            label1.Location = new System.Drawing.Point(20, 332);
+            label1.Location = new System.Drawing.Point(20, 307);
             label1.Name = "label1";
-            label1.Size = new System.Drawing.Size(44, 13);
+            label1.Size = new System.Drawing.Size(43, 13);
             label1.TabIndex = 25;
             label1.Text = "Token: ";
             // 
@@ -245,7 +246,7 @@ namespace Pulsar.Server.Forms
             // 
             txtTelegramChatID.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             txtTelegramChatID.Enabled = false;
-            txtTelegramChatID.Location = new System.Drawing.Point(70, 357);
+            txtTelegramChatID.Location = new System.Drawing.Point(70, 332);
             txtTelegramChatID.Name = "txtTelegramChatID";
             txtTelegramChatID.Size = new System.Drawing.Size(278, 22);
             txtTelegramChatID.TabIndex = 26;
@@ -255,7 +256,7 @@ namespace Pulsar.Server.Forms
             label2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             label2.AutoSize = true;
             label2.Enabled = false;
-            label2.Location = new System.Drawing.Point(19, 360);
+            label2.Location = new System.Drawing.Point(19, 335);
             label2.Name = "label2";
             label2.Size = new System.Drawing.Size(45, 13);
             label2.TabIndex = 27;
@@ -264,7 +265,7 @@ namespace Pulsar.Server.Forms
             // button1
             // 
             button1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            button1.Location = new System.Drawing.Point(192, 385);
+            button1.Location = new System.Drawing.Point(192, 360);
             button1.Name = "button1";
             button1.Size = new System.Drawing.Size(156, 23);
             button1.TabIndex = 28;
@@ -276,7 +277,7 @@ namespace Pulsar.Server.Forms
             // 
             groupBox1.Anchor = System.Windows.Forms.AnchorStyles.None;
             groupBox1.Controls.Add(BlockedRichTB);
-            groupBox1.Location = new System.Drawing.Point(39, 415);
+            groupBox1.Location = new System.Drawing.Point(39, 388);
             groupBox1.Name = "groupBox1";
             groupBox1.Size = new System.Drawing.Size(290, 137);
             groupBox1.TabIndex = 30;
@@ -333,7 +334,7 @@ namespace Pulsar.Server.Forms
             chkShowCountryGroups.AutoSize = true;
             chkShowCountryGroups.Checked = true;
             chkShowCountryGroups.CheckState = System.Windows.Forms.CheckState.Checked;
-            chkShowCountryGroups.Location = new System.Drawing.Point(12, 283);
+            chkShowCountryGroups.Location = new System.Drawing.Point(12, 258);
             chkShowCountryGroups.Name = "chkShowCountryGroups";
             chkShowCountryGroups.Size = new System.Drawing.Size(152, 17);
             chkShowCountryGroups.TabIndex = 10;
@@ -344,7 +345,7 @@ namespace Pulsar.Server.Forms
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            ClientSize = new System.Drawing.Size(360, 593);
+            ClientSize = new System.Drawing.Size(360, 596);
             Controls.Add(txtMultiPorts);
             Controls.Add(lblMultiPorts);
             Controls.Add(chkShowCountryGroups);
@@ -380,7 +381,6 @@ namespace Pulsar.Server.Forms
             groupBox1.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
-
         }
 
         #endregion

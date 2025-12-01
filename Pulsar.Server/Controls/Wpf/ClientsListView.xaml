@@ -30,7 +30,25 @@
             <Setter Property="Foreground" Value="{DynamicResource RowForegroundBrush}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="SnapsToDevicePixels" Value="True" />
+
+            <!-- ★ Added Tooltip Here ★ -->
+            <Setter Property="ToolTip">
+                <Setter.Value>
+                    <ToolTip Background="#222" Foreground="White" BorderBrush="#444" BorderThickness="1">
+                        <StackPanel Margin="6">
+                            <TextBlock Text="{Binding Ip}" />
+                            <TextBlock Text="{Binding Nickname}" />
+                            <TextBlock Text="{Binding OperatingSystem}" />
+                            <TextBlock Text="{Binding CountryWithCode}" />
+                            <TextBlock Text="{Binding CurrentWindow}" />
+                            <TextBlock Text="{Binding Status}" />
+                        </StackPanel>
+                    </ToolTip>
+                </Setter.Value>
+            </Setter>
+
             <EventSetter Event="PreviewMouseRightButtonDown" Handler="DataGridRow_OnPreviewMouseRightButtonDown" />
+
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="{DynamicResource RowHoverBrush}" />

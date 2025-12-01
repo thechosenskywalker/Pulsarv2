@@ -1,4 +1,6 @@
-﻿namespace Pulsar.Server.Forms
+﻿using System.Windows.Forms;
+
+namespace Pulsar.Server.Forms
 {
     partial class FrmRemoteChat
     {
@@ -235,7 +237,7 @@
             this.tableLayoutPanel1.RowCount = 3;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 30F));
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 29F));
+            this.tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Absolute, 80F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(356, 405);
             this.tableLayoutPanel1.TabIndex = 0;
             // 

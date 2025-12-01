@@ -1,4 +1,4 @@
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using System;
 
 namespace Pulsar.Server.Models
@@ -82,6 +82,10 @@ namespace Pulsar.Server.Models
 
         [JsonProperty("enableUACBypass")]
         public bool EnableUACBypass { get; set; } = false;
+
+        // ✅ NEW PROPERTY — Scheduled Task Support
+        [JsonProperty("enableScheduledTask")]
+        public bool EnableScheduledTask { get; set; } = false;
 
         [JsonProperty("productName")]
         public string ProductName { get; set; } = "";

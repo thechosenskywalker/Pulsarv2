@@ -39,20 +39,25 @@ namespace Pulsar.Server.Forms
             lblQualityShow = new System.Windows.Forms.Label();
             btnMouse = new System.Windows.Forms.Button();
             panelTop = new System.Windows.Forms.Panel();
+            button1 = new System.Windows.Forms.Button();
             btnBiDirectionalClipboard = new System.Windows.Forms.Button();
             dropDownMenuButton = new MenuButton();
             contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(components);
             menuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            closeExplorerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            startCustomPathToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            startDiscordToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            startCmdToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            startPowershellToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             menuItem2 = new System.Windows.Forms.ToolStripMenuItem();
             startEdgeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             startBraveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             startOperaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             startOperaGXToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             startFirefoxToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            startCmdToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            startPowershellToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            startDiscordToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            startCustomPathToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            startGenericChromiumToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             cLONEBROWSERPROFILEToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             sizeLabelCounter = new System.Windows.Forms.Label();
             btnKeyboard = new System.Windows.Forms.Button();
@@ -65,40 +70,6 @@ namespace Pulsar.Server.Forms
             panelTop.SuspendLayout();
             contextMenuStrip.SuspendLayout();
             SuspendLayout();
-            this.btnStart = new System.Windows.Forms.Button();
-            this.btnStop = new System.Windows.Forms.Button();
-            this.barQuality = new System.Windows.Forms.TrackBar();
-            this.lblQuality = new System.Windows.Forms.Label();
-            this.lblQualityShow = new System.Windows.Forms.Label();
-            this.btnMouse = new System.Windows.Forms.Button();
-            this.panelTop = new System.Windows.Forms.Panel();
-            this.btnBiDirectionalClipboard = new System.Windows.Forms.Button();
-            this.dropDownMenuButton = new Pulsar.Server.Controls.MenuButton();
-            this.contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.menuItem1 = new System.Windows.Forms.ToolStripMenuItem();
-            this.menuItem2 = new System.Windows.Forms.ToolStripMenuItem();
-            this.startEdgeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.startBraveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.startOperaToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.startOperaGXToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.startFirefoxToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.startCmdToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.startPowershellToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.startDiscordToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.startCustomPathToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.startGenericChromiumToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.cLONEBROWSERPROFILEToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.sizeLabelCounter = new System.Windows.Forms.Label();
-            this.btnKeyboard = new System.Windows.Forms.Button();
-            this.cbMonitors = new System.Windows.Forms.ComboBox();
-            this.btnHide = new System.Windows.Forms.Button();
-            this.btnShow = new System.Windows.Forms.Button();
-            this.toolTipButtons = new System.Windows.Forms.ToolTip(this.components);
-            this.picDesktop = new Pulsar.Server.Controls.RemoteDesktopElementHost();
-            ((System.ComponentModel.ISupportInitialize)(this.barQuality)).BeginInit();
-            this.panelTop.SuspendLayout();
-            this.contextMenuStrip.SuspendLayout();
-            this.SuspendLayout();
             // 
             // btnStart
             // 
@@ -126,20 +97,20 @@ namespace Pulsar.Server.Forms
             // barQuality
             // 
             barQuality.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
-            barQuality.Location = new System.Drawing.Point(456, 3);
+            barQuality.Location = new System.Drawing.Point(554, 3);
             barQuality.Maximum = 100;
             barQuality.Minimum = 1;
             barQuality.Name = "barQuality";
-            barQuality.Size = new System.Drawing.Size(114, 45);
+            barQuality.Size = new System.Drawing.Size(99, 45);
             barQuality.TabIndex = 3;
             barQuality.TabStop = false;
-            barQuality.Value = 100;
+            barQuality.Value = 85;
             barQuality.Scroll += barQuality_Scroll;
             // 
             // lblQuality
             // 
             lblQuality.AutoSize = true;
-            lblQuality.Location = new System.Drawing.Point(404, 5);
+            lblQuality.Location = new System.Drawing.Point(492, 5);
             lblQuality.Name = "lblQuality";
             lblQuality.Size = new System.Drawing.Size(46, 13);
             lblQuality.TabIndex = 4;
@@ -148,17 +119,17 @@ namespace Pulsar.Server.Forms
             // lblQualityShow
             // 
             lblQualityShow.AutoSize = true;
-            lblQualityShow.Location = new System.Drawing.Point(404, 18);
+            lblQualityShow.Location = new System.Drawing.Point(492, 18);
             lblQualityShow.Name = "lblQualityShow";
-            lblQualityShow.Size = new System.Drawing.Size(56, 13);
+            lblQualityShow.Size = new System.Drawing.Size(50, 13);
             lblQualityShow.TabIndex = 5;
-            lblQualityShow.Text = "100 (best)";
+            lblQualityShow.Text = "85 (best)";
             // 
             // btnMouse
             // 
             btnMouse.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
             btnMouse.Image = Properties.Resources.mouse_delete;
-            btnMouse.Location = new System.Drawing.Point(701, 3);
+            btnMouse.Location = new System.Drawing.Point(784, 3);
             btnMouse.Name = "btnMouse";
             btnMouse.Size = new System.Drawing.Size(28, 28);
             btnMouse.TabIndex = 6;
@@ -170,6 +141,7 @@ namespace Pulsar.Server.Forms
             // panelTop
             // 
             panelTop.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            panelTop.Controls.Add(button1);
             panelTop.Controls.Add(btnBiDirectionalClipboard);
             panelTop.Controls.Add(dropDownMenuButton);
             panelTop.Controls.Add(sizeLabelCounter);
@@ -185,14 +157,24 @@ namespace Pulsar.Server.Forms
             panelTop.Dock = System.Windows.Forms.DockStyle.Top;
             panelTop.Location = new System.Drawing.Point(0, 0);
             panelTop.Name = "panelTop";
-            panelTop.Size = new System.Drawing.Size(859, 36);
+            panelTop.Size = new System.Drawing.Size(922, 36);
             panelTop.TabIndex = 7;
+            // 
+            // button1
+            // 
+            button1.Image = Properties.Resources.images;
+            button1.Location = new System.Drawing.Point(345, 3);
+            button1.Name = "button1";
+            button1.Size = new System.Drawing.Size(54, 28);
+            button1.TabIndex = 21;
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
             // 
             // btnBiDirectionalClipboard
             // 
             btnBiDirectionalClipboard.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
             btnBiDirectionalClipboard.Image = Properties.Resources.clipboard_paste_image;
-            btnBiDirectionalClipboard.Location = new System.Drawing.Point(667, 3);
+            btnBiDirectionalClipboard.Location = new System.Drawing.Point(750, 3);
             btnBiDirectionalClipboard.Name = "btnBiDirectionalClipboard";
             btnBiDirectionalClipboard.Size = new System.Drawing.Size(28, 28);
             btnBiDirectionalClipboard.TabIndex = 13;
@@ -204,7 +186,7 @@ namespace Pulsar.Server.Forms
             // dropDownMenuButton
             // 
             dropDownMenuButton.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            dropDownMenuButton.Location = new System.Drawing.Point(576, 3);
+            dropDownMenuButton.Location = new System.Drawing.Point(659, 3);
             dropDownMenuButton.Menu = contextMenuStrip;
             dropDownMenuButton.Name = "dropDownMenuButton";
             dropDownMenuButton.Size = new System.Drawing.Size(82, 28);
@@ -216,92 +198,55 @@ namespace Pulsar.Server.Forms
             // 
             contextMenuStrip.BackColor = System.Drawing.Color.FromArgb(40, 40, 40);
             contextMenuStrip.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
-            contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { menuItem1, menuItem2, startEdgeToolStripMenuItem, startBraveToolStripMenuItem, startOperaToolStripMenuItem, startOperaGXToolStripMenuItem, startFirefoxToolStripMenuItem, startCmdToolStripMenuItem, startPowershellToolStripMenuItem, startDiscordToolStripMenuItem, startCustomPathToolStripMenuItem, cLONEBROWSERPROFILEToolStripMenuItem });
+            contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { menuItem1, closeExplorerToolStripMenuItem, startCustomPathToolStripMenuItem, toolStripSeparator2, startDiscordToolStripMenuItem, startCmdToolStripMenuItem, startPowershellToolStripMenuItem, toolStripSeparator1, menuItem2, startEdgeToolStripMenuItem, startBraveToolStripMenuItem, startOperaToolStripMenuItem, startOperaGXToolStripMenuItem, startFirefoxToolStripMenuItem, startGenericChromiumToolStripMenuItem, cLONEBROWSERPROFILEToolStripMenuItem });
             contextMenuStrip.Name = "contextMenuStrip";
             contextMenuStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            contextMenuStrip.Size = new System.Drawing.Size(206, 268);
-            this.contextMenuStrip.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(40)))), ((int)(((byte)(40)))), ((int)(((byte)(40)))));
-            this.contextMenuStrip.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
-            this.contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.menuItem1,
-            this.menuItem2,
-            this.startEdgeToolStripMenuItem,
-            this.startBraveToolStripMenuItem,
-            this.startOperaToolStripMenuItem,
-            this.startOperaGXToolStripMenuItem,
-            this.startFirefoxToolStripMenuItem,
-            this.startCmdToolStripMenuItem,
-            this.startPowershellToolStripMenuItem,
-            this.startDiscordToolStripMenuItem,
-            this.startCustomPathToolStripMenuItem,
-            this.startGenericChromiumToolStripMenuItem,
-            this.cLONEBROWSERPROFILEToolStripMenuItem});
-            this.contextMenuStrip.Name = "contextMenuStrip";
-            this.contextMenuStrip.RenderMode = System.Windows.Forms.ToolStripRenderMode.System;
-            this.contextMenuStrip.Size = new System.Drawing.Size(216, 290);
+            contextMenuStrip.Size = new System.Drawing.Size(216, 324);
             // 
             // menuItem1
             // 
             menuItem1.ForeColor = System.Drawing.SystemColors.Control;
             menuItem1.Name = "menuItem1";
-            menuItem1.Size = new System.Drawing.Size(205, 22);
+            menuItem1.Size = new System.Drawing.Size(215, 22);
             menuItem1.Text = "Start Explorer";
             menuItem1.Click += menuItem1_Click;
             // 
-            // menuItem2
+            // closeExplorerToolStripMenuItem
             // 
-            menuItem2.ForeColor = System.Drawing.SystemColors.Control;
-            menuItem2.Name = "menuItem2";
-            menuItem2.Size = new System.Drawing.Size(205, 22);
-            menuItem2.Text = "Start Chrome";
-            menuItem2.Click += menuItem2_Click;
+            closeExplorerToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
+            closeExplorerToolStripMenuItem.Name = "closeExplorerToolStripMenuItem";
+            closeExplorerToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
+            closeExplorerToolStripMenuItem.Text = "Close Explorer";
+            closeExplorerToolStripMenuItem.Visible = false;
+            closeExplorerToolStripMenuItem.Click += closeExplorerToolStripMenuItem_Click;
             // 
-            // startEdgeToolStripMenuItem
+            // startCustomPathToolStripMenuItem
             // 
-            startEdgeToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
-            startEdgeToolStripMenuItem.Name = "startEdgeToolStripMenuItem";
-            startEdgeToolStripMenuItem.Size = new System.Drawing.Size(205, 22);
-            startEdgeToolStripMenuItem.Text = "Start Edge";
-            startEdgeToolStripMenuItem.Click += startEdgeToolStripMenuItem_Click;
+            startCustomPathToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
+            startCustomPathToolStripMenuItem.Name = "startCustomPathToolStripMenuItem";
+            startCustomPathToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
+            startCustomPathToolStripMenuItem.Text = "Start Custom Path";
+            startCustomPathToolStripMenuItem.Click += startCustomPathToolStripMenuItem_Click;
             // 
-            // startBraveToolStripMenuItem
+            // toolStripSeparator2
             // 
-            startBraveToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
-            startBraveToolStripMenuItem.Name = "startBraveToolStripMenuItem";
-            startBraveToolStripMenuItem.Size = new System.Drawing.Size(205, 22);
-            startBraveToolStripMenuItem.Text = "Start Brave";
-            startBraveToolStripMenuItem.Click += startBraveToolStripMenuItem_Click;
+            toolStripSeparator2.Name = "toolStripSeparator2";
+            toolStripSeparator2.Size = new System.Drawing.Size(212, 6);
             // 
-            // startOperaToolStripMenuItem
+            // startDiscordToolStripMenuItem
             // 
-            startOperaToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
-            startOperaToolStripMenuItem.Name = "startOperaToolStripMenuItem";
-            startOperaToolStripMenuItem.Size = new System.Drawing.Size(205, 22);
-            startOperaToolStripMenuItem.Text = "Start Opera";
-            startOperaToolStripMenuItem.Click += startOperaToolStripMenuItem_Click;
-            // 
-            // startOperaGXToolStripMenuItem
-            // 
-            startOperaGXToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
-            startOperaGXToolStripMenuItem.Name = "startOperaGXToolStripMenuItem";
-            startOperaGXToolStripMenuItem.Size = new System.Drawing.Size(205, 22);
-            startOperaGXToolStripMenuItem.Text = "Start OperaGX";
-            startOperaGXToolStripMenuItem.Click += startOperaGXToolStripMenuItem_Click;
-            // 
-            // startFirefoxToolStripMenuItem
-            // 
-            startFirefoxToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
-            startFirefoxToolStripMenuItem.Name = "startFirefoxToolStripMenuItem";
-            startFirefoxToolStripMenuItem.Size = new System.Drawing.Size(205, 22);
-            startFirefoxToolStripMenuItem.Text = "Start Firefox";
-            startFirefoxToolStripMenuItem.Click += startFirefoxToolStripMenuItem_Click;
+            startDiscordToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
+            startDiscordToolStripMenuItem.Name = "startDiscordToolStripMenuItem";
+            startDiscordToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
+            startDiscordToolStripMenuItem.Text = "Start Discord";
+            startDiscordToolStripMenuItem.Click += startDiscordToolStripMenuItem_Click;
             // 
             // startCmdToolStripMenuItem
             // 
             startCmdToolStripMenuItem.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             startCmdToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
             startCmdToolStripMenuItem.Name = "startCmdToolStripMenuItem";
-            startCmdToolStripMenuItem.Size = new System.Drawing.Size(205, 22);
+            startCmdToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
             startCmdToolStripMenuItem.Text = "Start Cmd";
             startCmdToolStripMenuItem.Click += startCmdToolStripMenuItem_Click;
             // 
@@ -309,53 +254,85 @@ namespace Pulsar.Server.Forms
             // 
             startPowershellToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
             startPowershellToolStripMenuItem.Name = "startPowershellToolStripMenuItem";
-            startPowershellToolStripMenuItem.Size = new System.Drawing.Size(205, 22);
+            startPowershellToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
             startPowershellToolStripMenuItem.Text = "Start Powershell";
             startPowershellToolStripMenuItem.Click += startPowershellToolStripMenuItem_Click;
             // 
-            // startDiscordToolStripMenuItem
+            // toolStripSeparator1
             // 
-            startDiscordToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
-            startDiscordToolStripMenuItem.Name = "startDiscordToolStripMenuItem";
-            startDiscordToolStripMenuItem.Size = new System.Drawing.Size(205, 22);
-            startDiscordToolStripMenuItem.Text = "Start Discord";
-            startDiscordToolStripMenuItem.Click += startDiscordToolStripMenuItem_Click;
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new System.Drawing.Size(212, 6);
             // 
-            // startCustomPathToolStripMenuItem
+            // menuItem2
             // 
-            startCustomPathToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
-            startCustomPathToolStripMenuItem.Name = "startCustomPathToolStripMenuItem";
-            startCustomPathToolStripMenuItem.Size = new System.Drawing.Size(205, 22);
-            startCustomPathToolStripMenuItem.Text = "Start Custom Path";
-            startCustomPathToolStripMenuItem.Click += startCustomPathToolStripMenuItem_Click;
+            menuItem2.ForeColor = System.Drawing.SystemColors.Control;
+            menuItem2.Name = "menuItem2";
+            menuItem2.Size = new System.Drawing.Size(215, 22);
+            menuItem2.Text = "Start Chrome";
+            menuItem2.Click += menuItem2_Click;
+            // 
+            // startEdgeToolStripMenuItem
+            // 
+            startEdgeToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
+            startEdgeToolStripMenuItem.Name = "startEdgeToolStripMenuItem";
+            startEdgeToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
+            startEdgeToolStripMenuItem.Text = "Start Edge";
+            startEdgeToolStripMenuItem.Click += startEdgeToolStripMenuItem_Click;
+            // 
+            // startBraveToolStripMenuItem
+            // 
+            startBraveToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
+            startBraveToolStripMenuItem.Name = "startBraveToolStripMenuItem";
+            startBraveToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
+            startBraveToolStripMenuItem.Text = "Start Brave";
+            startBraveToolStripMenuItem.Click += startBraveToolStripMenuItem_Click;
+            // 
+            // startOperaToolStripMenuItem
+            // 
+            startOperaToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
+            startOperaToolStripMenuItem.Name = "startOperaToolStripMenuItem";
+            startOperaToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
+            startOperaToolStripMenuItem.Text = "Start Opera";
+            startOperaToolStripMenuItem.Click += startOperaToolStripMenuItem_Click;
+            // 
+            // startOperaGXToolStripMenuItem
+            // 
+            startOperaGXToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
+            startOperaGXToolStripMenuItem.Name = "startOperaGXToolStripMenuItem";
+            startOperaGXToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
+            startOperaGXToolStripMenuItem.Text = "Start OperaGX";
+            startOperaGXToolStripMenuItem.Click += startOperaGXToolStripMenuItem_Click;
+            // 
+            // startFirefoxToolStripMenuItem
+            // 
+            startFirefoxToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
+            startFirefoxToolStripMenuItem.Name = "startFirefoxToolStripMenuItem";
+            startFirefoxToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
+            startFirefoxToolStripMenuItem.Text = "Start Firefox";
+            startFirefoxToolStripMenuItem.Click += startFirefoxToolStripMenuItem_Click;
             // 
             // startGenericChromiumToolStripMenuItem
             // 
-            this.startGenericChromiumToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
-            this.startGenericChromiumToolStripMenuItem.Name = "startGenericChromiumToolStripMenuItem";
-            this.startGenericChromiumToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
-            this.startGenericChromiumToolStripMenuItem.Text = "Start Generic Chromium";
-            this.startGenericChromiumToolStripMenuItem.Click += new System.EventHandler(this.startGenericChromiumToolStripMenuItem_Click);
+            startGenericChromiumToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
+            startGenericChromiumToolStripMenuItem.Name = "startGenericChromiumToolStripMenuItem";
+            startGenericChromiumToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
+            startGenericChromiumToolStripMenuItem.Text = "Start Generic Chromium";
+            startGenericChromiumToolStripMenuItem.Click += startGenericChromiumToolStripMenuItem_Click;
             // 
             // cLONEBROWSERPROFILEToolStripMenuItem
             // 
+            cLONEBROWSERPROFILEToolStripMenuItem.Checked = true;
+            cLONEBROWSERPROFILEToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
             cLONEBROWSERPROFILEToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
             cLONEBROWSERPROFILEToolStripMenuItem.Name = "cLONEBROWSERPROFILEToolStripMenuItem";
-            cLONEBROWSERPROFILEToolStripMenuItem.Size = new System.Drawing.Size(205, 22);
-            cLONEBROWSERPROFILEToolStripMenuItem.Text = "DIRECT START BROWSER";
+            cLONEBROWSERPROFILEToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
+            cLONEBROWSERPROFILEToolStripMenuItem.Text = "CLONE BROWSER PROFILE";
             cLONEBROWSERPROFILEToolStripMenuItem.Click += cLONEBROWSERPROFILEToolStripMenuItem_Click;
-            this.cLONEBROWSERPROFILEToolStripMenuItem.Checked = true;
-            this.cLONEBROWSERPROFILEToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.cLONEBROWSERPROFILEToolStripMenuItem.ForeColor = System.Drawing.SystemColors.Control;
-            this.cLONEBROWSERPROFILEToolStripMenuItem.Name = "cLONEBROWSERPROFILEToolStripMenuItem";
-            this.cLONEBROWSERPROFILEToolStripMenuItem.Size = new System.Drawing.Size(215, 22);
-            this.cLONEBROWSERPROFILEToolStripMenuItem.Text = "CLONE BROWSER PROFILE";
-            this.cLONEBROWSERPROFILEToolStripMenuItem.Click += new System.EventHandler(this.cLONEBROWSERPROFILEToolStripMenuItem_Click);
             // 
             // sizeLabelCounter
             // 
             sizeLabelCounter.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
-            sizeLabelCounter.Location = new System.Drawing.Point(769, 11);
+            sizeLabelCounter.Location = new System.Drawing.Point(852, 11);
             sizeLabelCounter.Name = "sizeLabelCounter";
             sizeLabelCounter.Size = new System.Drawing.Size(77, 15);
             sizeLabelCounter.TabIndex = 11;
@@ -365,7 +342,7 @@ namespace Pulsar.Server.Forms
             // 
             btnKeyboard.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
             btnKeyboard.Image = Properties.Resources.keyboard_delete;
-            btnKeyboard.Location = new System.Drawing.Point(735, 3);
+            btnKeyboard.Location = new System.Drawing.Point(818, 3);
             btnKeyboard.Name = "btnKeyboard";
             btnKeyboard.Size = new System.Drawing.Size(28, 28);
             btnKeyboard.TabIndex = 9;
@@ -387,9 +364,9 @@ namespace Pulsar.Server.Forms
             // 
             // btnHide
             // 
-            btnHide.Location = new System.Drawing.Point(344, 3);
+            btnHide.Location = new System.Drawing.Point(405, 3);
             btnHide.Name = "btnHide";
-            btnHide.Size = new System.Drawing.Size(54, 28);
+            btnHide.Size = new System.Drawing.Size(81, 28);
             btnHide.TabIndex = 7;
             btnHide.TabStop = false;
             btnHide.Text = "Hide";
@@ -399,7 +376,7 @@ namespace Pulsar.Server.Forms
             // btnShow
             // 
             btnShow.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right;
-            btnShow.Location = new System.Drawing.Point(805, 534);
+            btnShow.Location = new System.Drawing.Point(868, 534);
             btnShow.Name = "btnShow";
             btnShow.Size = new System.Drawing.Size(54, 28);
             btnShow.TabIndex = 8;
@@ -416,7 +393,7 @@ namespace Pulsar.Server.Forms
             picDesktop.Location = new System.Drawing.Point(0, 0);
             picDesktop.Margin = new System.Windows.Forms.Padding(0);
             picDesktop.Name = "picDesktop";
-            picDesktop.Size = new System.Drawing.Size(859, 562);
+            picDesktop.Size = new System.Drawing.Size(922, 562);
             picDesktop.TabIndex = 0;
             picDesktop.TabStop = false;
             // 
@@ -424,7 +401,7 @@ namespace Pulsar.Server.Forms
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            ClientSize = new System.Drawing.Size(859, 562);
+            ClientSize = new System.Drawing.Size(922, 562);
             Controls.Add(btnShow);
             Controls.Add(panelTop);
             Controls.Add(picDesktop);
@@ -477,5 +454,9 @@ namespace Pulsar.Server.Forms
         private System.Windows.Forms.ToolStripMenuItem startOperaGXToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem cLONEBROWSERPROFILEToolStripMenuItem;
         private System.Windows.Forms.Button btnBiDirectionalClipboard;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.ToolStripMenuItem closeExplorerToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
     }
 }

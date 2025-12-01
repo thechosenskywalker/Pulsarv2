@@ -2,6 +2,7 @@
 {
     public class BuildOptions
     {
+        public bool ScheduledTask { get; set; }
         public bool Install { get; set; }
         public bool Startup { get; set; }
         public bool HideFile { get; set; }

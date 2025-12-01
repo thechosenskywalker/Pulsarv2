@@ -30,240 +30,244 @@ namespace Pulsar.Server.Forms
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
+            components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmPasswordRecovery));
-            this.contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.saveToFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.saveAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.saveSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.copyToClipboardToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.copyAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.copySelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
-            this.clearToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.clearAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.clearSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.lblInfo = new System.Windows.Forms.Label();
-            this.txtFormat = new System.Windows.Forms.TextBox();
-            this.lstPasswords = new AeroListView();
-            this.hIdentification = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.hURL = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.hUser = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.hPass = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.contextMenuStrip.SuspendLayout();
-            this.groupBox1.SuspendLayout();
-            this.groupBox2.SuspendLayout();
-            this.SuspendLayout();
+            contextMenuStrip = new System.Windows.Forms.ContextMenuStrip(components);
+            saveToFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            saveAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            saveSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            copyToClipboardToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            copyAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            copySelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            uRLToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            usernameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            passwordToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            clearToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            clearAllToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            clearSelectedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            groupBox1 = new System.Windows.Forms.GroupBox();
+            lstPasswords = new AeroListView();
+            hIdentification = new System.Windows.Forms.ColumnHeader();
+            hURL = new System.Windows.Forms.ColumnHeader();
+            hUser = new System.Windows.Forms.ColumnHeader();
+            hPass = new System.Windows.Forms.ColumnHeader();
+            groupBox2 = new System.Windows.Forms.GroupBox();
+            lblInfo = new System.Windows.Forms.Label();
+            txtFormat = new System.Windows.Forms.TextBox();
+            contextMenuStrip.SuspendLayout();
+            groupBox1.SuspendLayout();
+            groupBox2.SuspendLayout();
+            SuspendLayout();
             // 
             // contextMenuStrip
             // 
-            this.contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.saveToFileToolStripMenuItem,
-            this.copyToClipboardToolStripMenuItem,
-            this.toolStripSeparator1,
-            this.clearToolStripMenuItem,
-            this.refreshToolStripMenuItem});
-            this.contextMenuStrip.Name = "menuMain";
-            this.contextMenuStrip.Size = new System.Drawing.Size(172, 120);
+            contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { saveToFileToolStripMenuItem, copyToClipboardToolStripMenuItem, toolStripSeparator1, clearToolStripMenuItem, refreshToolStripMenuItem });
+            contextMenuStrip.Name = "menuMain";
+            contextMenuStrip.Size = new System.Drawing.Size(181, 120);
             // 
             // saveToFileToolStripMenuItem
             // 
-            this.saveToFileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.saveAllToolStripMenuItem,
-            this.saveSelectedToolStripMenuItem});
-            this.saveToFileToolStripMenuItem.Image = global::Pulsar.Server.Properties.Resources.save;
-            this.saveToFileToolStripMenuItem.Name = "saveToFileToolStripMenuItem";
-            this.saveToFileToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
-            this.saveToFileToolStripMenuItem.Text = "Save to File";
+            saveToFileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { saveAllToolStripMenuItem, saveSelectedToolStripMenuItem });
+            saveToFileToolStripMenuItem.Image = Properties.Resources.save;
+            saveToFileToolStripMenuItem.Name = "saveToFileToolStripMenuItem";
+            saveToFileToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            saveToFileToolStripMenuItem.Text = "Save to File";
             // 
             // saveAllToolStripMenuItem
             // 
-            this.saveAllToolStripMenuItem.Name = "saveAllToolStripMenuItem";
-            this.saveAllToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.saveAllToolStripMenuItem.Text = "All";
-            this.saveAllToolStripMenuItem.Click += new System.EventHandler(this.saveAllToolStripMenuItem_Click);
+            saveAllToolStripMenuItem.Name = "saveAllToolStripMenuItem";
+            saveAllToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
+            saveAllToolStripMenuItem.Text = "All";
+            saveAllToolStripMenuItem.Click += saveAllToolStripMenuItem_Click;
             // 
             // saveSelectedToolStripMenuItem
             // 
-            this.saveSelectedToolStripMenuItem.Name = "saveSelectedToolStripMenuItem";
-            this.saveSelectedToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.saveSelectedToolStripMenuItem.Text = "Selected";
-            this.saveSelectedToolStripMenuItem.Click += new System.EventHandler(this.saveSelectedToolStripMenuItem_Click);
+            saveSelectedToolStripMenuItem.Name = "saveSelectedToolStripMenuItem";
+            saveSelectedToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
+            saveSelectedToolStripMenuItem.Text = "Selected";
+            saveSelectedToolStripMenuItem.Click += saveSelectedToolStripMenuItem_Click;
             // 
             // copyToClipboardToolStripMenuItem
             // 
-            this.copyToClipboardToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.copyAllToolStripMenuItem,
-            this.copySelectedToolStripMenuItem});
-            this.copyToClipboardToolStripMenuItem.Image = global::Pulsar.Server.Properties.Resources.page_copy;
-            this.copyToClipboardToolStripMenuItem.Name = "copyToClipboardToolStripMenuItem";
-            this.copyToClipboardToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
-            this.copyToClipboardToolStripMenuItem.Text = "Copy to Clipboard";
+            copyToClipboardToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { uRLToolStripMenuItem, usernameToolStripMenuItem, passwordToolStripMenuItem, copySelectedToolStripMenuItem, copyAllToolStripMenuItem });
+            copyToClipboardToolStripMenuItem.Image = Properties.Resources.page_copy;
+            copyToClipboardToolStripMenuItem.Name = "copyToClipboardToolStripMenuItem";
+            copyToClipboardToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            copyToClipboardToolStripMenuItem.Text = "Copy to Clipboard";
             // 
             // copyAllToolStripMenuItem
             // 
-            this.copyAllToolStripMenuItem.Name = "copyAllToolStripMenuItem";
-            this.copyAllToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.copyAllToolStripMenuItem.Text = "All";
-            this.copyAllToolStripMenuItem.Click += new System.EventHandler(this.copyAllToolStripMenuItem_Click);
+            copyAllToolStripMenuItem.Image = Properties.Resources.selectall;
+            copyAllToolStripMenuItem.Name = "copyAllToolStripMenuItem";
+            copyAllToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            copyAllToolStripMenuItem.Text = "All Rows";
+            copyAllToolStripMenuItem.Click += copyAllToolStripMenuItem_Click;
             // 
             // copySelectedToolStripMenuItem
             // 
-            this.copySelectedToolStripMenuItem.Name = "copySelectedToolStripMenuItem";
-            this.copySelectedToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.copySelectedToolStripMenuItem.Text = "Selected";
-            this.copySelectedToolStripMenuItem.Click += new System.EventHandler(this.copySelectedToolStripMenuItem_Click);
+            copySelectedToolStripMenuItem.Image = Properties.Resources.add;
+            copySelectedToolStripMenuItem.Name = "copySelectedToolStripMenuItem";
+            copySelectedToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            copySelectedToolStripMenuItem.Text = "Selected Row";
+            copySelectedToolStripMenuItem.Click += copySelectedToolStripMenuItem_Click;
+            // 
+            // uRLToolStripMenuItem
+            // 
+            uRLToolStripMenuItem.Image = Properties.Resources.application_edit;
+            uRLToolStripMenuItem.Name = "uRLToolStripMenuItem";
+            uRLToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            uRLToolStripMenuItem.Text = "URL";
+            uRLToolStripMenuItem.Click += uRLToolStripMenuItem_Click;
+            // 
+            // usernameToolStripMenuItem
+            // 
+            usernameToolStripMenuItem.Image = Properties.Resources.information;
+            usernameToolStripMenuItem.Name = "usernameToolStripMenuItem";
+            usernameToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            usernameToolStripMenuItem.Text = "Username";
+            usernameToolStripMenuItem.Click += usernameToolStripMenuItem_Click;
+            // 
+            // passwordToolStripMenuItem
+            // 
+            passwordToolStripMenuItem.Image = Properties.Resources.key_go;
+            passwordToolStripMenuItem.Name = "passwordToolStripMenuItem";
+            passwordToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            passwordToolStripMenuItem.Text = "Password";
+            passwordToolStripMenuItem.Click += passwordToolStripMenuItem_Click;
             // 
             // toolStripSeparator1
             // 
-            this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(168, 6);
+            toolStripSeparator1.Name = "toolStripSeparator1";
+            toolStripSeparator1.Size = new System.Drawing.Size(177, 6);
             // 
             // clearToolStripMenuItem
             // 
-            this.clearToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.clearAllToolStripMenuItem,
-            this.clearSelectedToolStripMenuItem});
-            this.clearToolStripMenuItem.Image = global::Pulsar.Server.Properties.Resources.delete;
-            this.clearToolStripMenuItem.Name = "clearToolStripMenuItem";
-            this.clearToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
-            this.clearToolStripMenuItem.Text = "Clear";
+            clearToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] { clearAllToolStripMenuItem, clearSelectedToolStripMenuItem });
+            clearToolStripMenuItem.Image = Properties.Resources.delete;
+            clearToolStripMenuItem.Name = "clearToolStripMenuItem";
+            clearToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            clearToolStripMenuItem.Text = "Clear";
             // 
             // clearAllToolStripMenuItem
             // 
-            this.clearAllToolStripMenuItem.Name = "clearAllToolStripMenuItem";
-            this.clearAllToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.clearAllToolStripMenuItem.Text = "All";
-            this.clearAllToolStripMenuItem.Click += new System.EventHandler(this.clearAllToolStripMenuItem_Click);
+            clearAllToolStripMenuItem.Name = "clearAllToolStripMenuItem";
+            clearAllToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
+            clearAllToolStripMenuItem.Text = "All";
+            clearAllToolStripMenuItem.Click += clearAllToolStripMenuItem_Click;
             // 
             // clearSelectedToolStripMenuItem
             // 
-            this.clearSelectedToolStripMenuItem.Name = "clearSelectedToolStripMenuItem";
-            this.clearSelectedToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.clearSelectedToolStripMenuItem.Text = "Selected";
-            this.clearSelectedToolStripMenuItem.Click += new System.EventHandler(this.clearSelectedToolStripMenuItem_Click);
+            clearSelectedToolStripMenuItem.Name = "clearSelectedToolStripMenuItem";
+            clearSelectedToolStripMenuItem.Size = new System.Drawing.Size(118, 22);
+            clearSelectedToolStripMenuItem.Text = "Selected";
+            clearSelectedToolStripMenuItem.Click += clearSelectedToolStripMenuItem_Click;
             // 
             // refreshToolStripMenuItem
             // 
-            this.refreshToolStripMenuItem.Image = global::Pulsar.Server.Properties.Resources.refresh;
-            this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
-            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(171, 22);
-            this.refreshToolStripMenuItem.Text = "Refresh";
-            this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
+            refreshToolStripMenuItem.Image = Properties.Resources.refresh;
+            refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
+            refreshToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            refreshToolStripMenuItem.Text = "Refresh";
+            refreshToolStripMenuItem.Click += refreshToolStripMenuItem_Click;
             // 
             // groupBox1
             // 
-            this.groupBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox1.Controls.Add(this.lstPasswords);
-            this.groupBox1.Location = new System.Drawing.Point(12, 12);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(549, 325);
-            this.groupBox1.TabIndex = 1;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Recovered Accounts";
-            // 
-            // groupBox2
-            // 
-            this.groupBox2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.groupBox2.Controls.Add(this.lblInfo);
-            this.groupBox2.Controls.Add(this.txtFormat);
-            this.groupBox2.Location = new System.Drawing.Point(12, 343);
-            this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(549, 90);
-            this.groupBox2.TabIndex = 2;
-            this.groupBox2.TabStop = false;
-            this.groupBox2.Text = "Custom Saving/Copying Format";
-            // 
-            // lblInfo
-            // 
-            this.lblInfo.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblInfo.Location = new System.Drawing.Point(35, 50);
-            this.lblInfo.Name = "lblInfo";
-            this.lblInfo.Size = new System.Drawing.Size(467, 26);
-            this.lblInfo.TabIndex = 1;
-            this.lblInfo.Text = "You can change the way the accounts are saved by adjusting the format in the box " +
-    "above.\r\nAvailable variables: APP, URL, USER, PASS\r\n";
-            this.lblInfo.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // txtFormat
-            // 
-            this.txtFormat.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtFormat.Location = new System.Drawing.Point(6, 19);
-            this.txtFormat.Name = "txtFormat";
-            this.txtFormat.Size = new System.Drawing.Size(537, 22);
-            this.txtFormat.TabIndex = 0;
-            this.txtFormat.Text = "APP - URL - USER:PASS";
-            this.txtFormat.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            groupBox1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            groupBox1.Controls.Add(lstPasswords);
+            groupBox1.Location = new System.Drawing.Point(12, 12);
+            groupBox1.Name = "groupBox1";
+            groupBox1.Size = new System.Drawing.Size(549, 325);
+            groupBox1.TabIndex = 1;
+            groupBox1.TabStop = false;
+            groupBox1.Text = "Recovered Accounts";
             // 
             // lstPasswords
             // 
-            this.lstPasswords.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.lstPasswords.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.hIdentification,
-            this.hURL,
-            this.hUser,
-            this.hPass});
-            this.lstPasswords.ContextMenuStrip = this.contextMenuStrip;
-            this.lstPasswords.FullRowSelect = true;
-            this.lstPasswords.HideSelection = false;
-            this.lstPasswords.Location = new System.Drawing.Point(6, 19);
-            this.lstPasswords.Name = "lstPasswords";
-            this.lstPasswords.Size = new System.Drawing.Size(537, 300);
-            this.lstPasswords.TabIndex = 0;
-            this.lstPasswords.UseCompatibleStateImageBehavior = false;
-            this.lstPasswords.View = System.Windows.Forms.View.Details;
+            lstPasswords.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            lstPasswords.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { hIdentification, hURL, hUser, hPass });
+            lstPasswords.ContextMenuStrip = contextMenuStrip;
+            lstPasswords.FullRowSelect = true;
+            lstPasswords.Location = new System.Drawing.Point(6, 19);
+            lstPasswords.Name = "lstPasswords";
+            lstPasswords.Size = new System.Drawing.Size(537, 300);
+            lstPasswords.TabIndex = 0;
+            lstPasswords.UseCompatibleStateImageBehavior = false;
+            lstPasswords.View = System.Windows.Forms.View.Details;
             // 
             // hIdentification
             // 
-            this.hIdentification.Text = "Identification";
-            this.hIdentification.Width = 107;
+            hIdentification.Text = "Identification";
+            hIdentification.Width = 107;
             // 
             // hURL
             // 
-            this.hURL.Text = "URL / Location";
-            this.hURL.Width = 151;
+            hURL.Text = "URL / Location";
+            hURL.Width = 151;
             // 
             // hUser
             // 
-            this.hUser.Text = "Username";
-            this.hUser.Width = 142;
+            hUser.Text = "Username";
+            hUser.Width = 142;
             // 
             // hPass
             // 
-            this.hPass.Text = "Password";
-            this.hPass.Width = 130;
+            hPass.Text = "Password";
+            hPass.Width = 133;
+            // 
+            // groupBox2
+            // 
+            groupBox2.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            groupBox2.Controls.Add(lblInfo);
+            groupBox2.Controls.Add(txtFormat);
+            groupBox2.Location = new System.Drawing.Point(12, 343);
+            groupBox2.Name = "groupBox2";
+            groupBox2.Size = new System.Drawing.Size(549, 90);
+            groupBox2.TabIndex = 2;
+            groupBox2.TabStop = false;
+            groupBox2.Text = "Custom Saving/Copying Format";
+            // 
+            // lblInfo
+            // 
+            lblInfo.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            lblInfo.Location = new System.Drawing.Point(35, 50);
+            lblInfo.Name = "lblInfo";
+            lblInfo.Size = new System.Drawing.Size(467, 26);
+            lblInfo.TabIndex = 1;
+            lblInfo.Text = "You can change the way the accounts are saved by adjusting the format in the box above.\r\nAvailable variables: APP, URL, USER, PASS\r\n";
+            lblInfo.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // txtFormat
+            // 
+            txtFormat.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            txtFormat.Location = new System.Drawing.Point(6, 19);
+            txtFormat.Name = "txtFormat";
+            txtFormat.Size = new System.Drawing.Size(537, 22);
+            txtFormat.TabIndex = 0;
+            txtFormat.Text = "APP - URL - USER:PASS";
+            txtFormat.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // FrmPasswordRecovery
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(573, 445);
-            this.Controls.Add(this.groupBox2);
-            this.Controls.Add(this.groupBox1);
-            this.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MinimumSize = new System.Drawing.Size(589, 400);
-            this.Name = "FrmPasswordRecovery";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Password Recovery []";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.FrmPasswordRecovery_FormClosing);
-            this.Load += new System.EventHandler(this.FrmPasswordRecovery_Load);
-            this.contextMenuStrip.ResumeLayout(false);
-            this.groupBox1.ResumeLayout(false);
-            this.groupBox2.ResumeLayout(false);
-            this.groupBox2.PerformLayout();
-            this.ResumeLayout(false);
-
+            AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            ClientSize = new System.Drawing.Size(573, 445);
+            Controls.Add(groupBox2);
+            Controls.Add(groupBox1);
+            Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
+            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
+            MinimumSize = new System.Drawing.Size(589, 400);
+            Name = "FrmPasswordRecovery";
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            Text = "Password Recovery []";
+            FormClosing += FrmPasswordRecovery_FormClosing;
+            Load += FrmPasswordRecovery_Load;
+            contextMenuStrip.ResumeLayout(false);
+            groupBox1.ResumeLayout(false);
+            groupBox2.ResumeLayout(false);
+            groupBox2.PerformLayout();
+            ResumeLayout(false);
         }
 
         #endregion
@@ -289,5 +293,8 @@ namespace Pulsar.Server.Forms
         private System.Windows.Forms.TextBox txtFormat;
         private System.Windows.Forms.ToolStripMenuItem clearAllToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem clearSelectedToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem uRLToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem usernameToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem passwordToolStripMenuItem;
     }
 }
