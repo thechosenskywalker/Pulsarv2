@@ -181,21 +181,14 @@ namespace Pulsar.Server.Forms
                 {
                     txtConsoleOutput.Clear();
 
-                    // Tell client to clear based on active shell
-                    if (usePowerShell)
-                    {
-                        // PowerShell uses host clear
-                        RemoteShellHandler.SendCommand("##clear");
-                    }
-                    else
-                    {
-                        // CMD must receive real CLS
-                        RemoteShellHandler.SendCommand("cls");
-                    }
+                    // Tell client to clear its host buffer
+                    RemoteShellHandler.SendCommand("##clear");
 
                     return;
                 }
 
+                // MULTILINE RAW SEND (NO TRIM)
+                RemoteShellHandler.SendCommand(input);
             }
         }
 
