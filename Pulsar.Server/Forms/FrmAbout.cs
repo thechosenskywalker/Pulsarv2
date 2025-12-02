@@ -10,7 +10,7 @@ namespace Pulsar.Server.Forms
 {
     public partial class FrmAbout : Form
     {
-        private readonly string _repositoryUrl = @"https://github.com/Quasar-Continuation/Poopsar";
+        private readonly string _repositoryUrl = @"https://github.com/PulsarV2/Pulsar";
         private readonly string _telegramUrl = @"https://t.me/novashadowisgay";
         private const string ContributorsMessage = """
 - [KingKDot](https://github.com/KingKDot) – Lead Developer
@@ -150,7 +150,7 @@ namespace Pulsar.Server.Forms
             {
                 System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
                 {
-                    FileName = "https://github.com/Quasar-Continuation/Poopsar",
+                    FileName = "https://github.com/PulsarV2/Pulsar",
                     UseShellExecute = true
                 });
             }

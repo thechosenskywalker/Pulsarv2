@@ -29,83 +29,84 @@
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmTaskCommand));
-            this.ShellComboBox = new System.Windows.Forms.ComboBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.CTextBox = new System.Windows.Forms.TextBox();
-            this.label2 = new System.Windows.Forms.Label();
-            this.button2 = new System.Windows.Forms.Button();
-            this.SuspendLayout();
+            ShellComboBox = new System.Windows.Forms.ComboBox();
+            label1 = new System.Windows.Forms.Label();
+            CTextBox = new System.Windows.Forms.TextBox();
+            label2 = new System.Windows.Forms.Label();
+            button2 = new System.Windows.Forms.Button();
+            SuspendLayout();
             // 
             // ShellComboBox
             // 
-            this.ShellComboBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.ShellComboBox.FormattingEnabled = true;
-            this.ShellComboBox.Items.AddRange(new object[] {
-            "Command Prompt",
-            "Powershell"});
-            this.ShellComboBox.Location = new System.Drawing.Point(12, 25);
-            this.ShellComboBox.Name = "ShellComboBox";
-            this.ShellComboBox.Size = new System.Drawing.Size(409, 21);
-            this.ShellComboBox.TabIndex = 0;
+            ShellComboBox.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            ShellComboBox.FormattingEnabled = true;
+            ShellComboBox.Items.AddRange(new object[] { "Command Prompt", "Powershell" });
+            ShellComboBox.Location = new System.Drawing.Point(14, 29);
+            ShellComboBox.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            ShellComboBox.Name = "ShellComboBox";
+            ShellComboBox.Size = new System.Drawing.Size(476, 23);
+            ShellComboBox.TabIndex = 0;
             // 
             // label1
             // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 9);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(30, 13);
-            this.label1.TabIndex = 1;
-            this.label1.Text = "Shell";
+            label1.AutoSize = true;
+            label1.Location = new System.Drawing.Point(14, 10);
+            label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            label1.Name = "label1";
+            label1.Size = new System.Drawing.Size(32, 15);
+            label1.TabIndex = 1;
+            label1.Text = "Shell";
             // 
             // CTextBox
             // 
-            this.CTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.CTextBox.Location = new System.Drawing.Point(12, 68);
-            this.CTextBox.Name = "CTextBox";
-            this.CTextBox.Size = new System.Drawing.Size(409, 20);
-            this.CTextBox.TabIndex = 5;
+            CTextBox.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            CTextBox.Location = new System.Drawing.Point(14, 78);
+            CTextBox.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            CTextBox.Multiline = true;
+            CTextBox.Name = "CTextBox";
+            CTextBox.Size = new System.Drawing.Size(476, 123);
+            CTextBox.TabIndex = 5;
             // 
             // label2
             // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(12, 49);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(54, 13);
-            this.label2.TabIndex = 4;
-            this.label2.Text = "Command";
+            label2.AutoSize = true;
+            label2.Location = new System.Drawing.Point(14, 57);
+            label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            label2.Name = "label2";
+            label2.Size = new System.Drawing.Size(64, 15);
+            label2.TabIndex = 4;
+            label2.Text = "Command";
             // 
             // button2
             // 
-            this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.button2.Location = new System.Drawing.Point(12, 93);
-            this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(409, 23);
-            this.button2.TabIndex = 6;
-            this.button2.Text = "Add Task";
-            this.button2.UseVisualStyleBackColor = true;
-            this.button2.Click += new System.EventHandler(this.button2_Click);
+            button2.Anchor = System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
+            button2.Location = new System.Drawing.Point(14, 207);
+            button2.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            button2.Name = "button2";
+            button2.Size = new System.Drawing.Size(477, 27);
+            button2.TabIndex = 6;
+            button2.Text = "Add Task";
+            button2.UseVisualStyleBackColor = true;
+            button2.Click += button2_Click;
             // 
             // FrmTaskCommand
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(433, 128);
-            this.Controls.Add(this.button2);
-            this.Controls.Add(this.CTextBox);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.ShellComboBox);
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Name = "FrmTaskCommand";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Auto Task | Shell Command";
-            this.Load += new System.EventHandler(this.FrmTaskCommand_Load);
-            this.ResumeLayout(false);
-            this.PerformLayout();
-
+            AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            ClientSize = new System.Drawing.Size(505, 248);
+            Controls.Add(button2);
+            Controls.Add(CTextBox);
+            Controls.Add(label2);
+            Controls.Add(label1);
+            Controls.Add(ShellComboBox);
+            Icon = (System.Drawing.Icon)resources.GetObject("$this.Icon");
+            Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
+            Name = "FrmTaskCommand";
+            StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            Text = "Auto Task | Shell Command";
+            Load += FrmTaskCommand_Load;
+            ResumeLayout(false);
+            PerformLayout();
         }
 
         #endregion

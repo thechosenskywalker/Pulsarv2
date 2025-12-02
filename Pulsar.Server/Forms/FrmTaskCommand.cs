@@ -24,8 +24,14 @@ namespace Pulsar.Server.Forms
 
         private void FrmTaskCommand_Load(object sender, EventArgs e)
         {
+            // Make it read-only
+            ShellComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
 
+            // Select first item automatically (if items exist)
+            if (ShellComboBox.Items.Count > 1)
+                ShellComboBox.SelectedIndex = 1;
         }
+
 
         private void button2_Click(object sender, EventArgs e)
         {
