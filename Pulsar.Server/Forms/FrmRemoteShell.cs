@@ -182,8 +182,17 @@ namespace Pulsar.Server.Forms
                     txtConsoleOutput.Clear();
 
                     // Tell client to clear its host buffer
-                    RemoteShellHandler.SendCommand("##clear");
-
+                    // Tell client to clear based on active shell
+                    if (usePowerShell)
+                    {
+                        // PowerShell uses host clear
+                        RemoteShellHandler.SendCommand("##clear");
+                    }
+                    else
+                    {
+                        // CMD must receive real CLS
+                        RemoteShellHandler.SendCommand("cls");
+                    }
                     return;
                 }
 
@@ -269,6 +278,9 @@ namespace Pulsar.Server.Forms
             }
             catch { }
         }
+        // Multiline script buffer
+        private bool capturingMultiline = false;
+        private List<string> multilineBuffer = new List<string>();
 
         private void copyAllToolStripMenuItem_Click(object sender, EventArgs e)
         {

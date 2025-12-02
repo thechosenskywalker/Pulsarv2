@@ -33,6 +33,7 @@
             txtURL = new System.Windows.Forms.TextBox();
             lblURL = new System.Windows.Forms.Label();
             groupLocalFile = new System.Windows.Forms.GroupBox();
+            checkBox1 = new System.Windows.Forms.CheckBox();
             btnBrowse = new System.Windows.Forms.Button();
             txtPath = new System.Windows.Forms.TextBox();
             label1 = new System.Windows.Forms.Label();
@@ -81,6 +82,7 @@
             // 
             // groupLocalFile
             // 
+            groupLocalFile.Controls.Add(checkBox1);
             groupLocalFile.Controls.Add(btnBrowse);
             groupLocalFile.Controls.Add(txtPath);
             groupLocalFile.Controls.Add(label1);
@@ -90,6 +92,20 @@
             groupLocalFile.Size = new System.Drawing.Size(479, 75);
             groupLocalFile.TabIndex = 1;
             groupLocalFile.TabStop = false;
+            // 
+            // checkBox1
+            // 
+            checkBox1.AutoSize = true;
+            checkBox1.Checked = true;
+            checkBox1.CheckState = System.Windows.Forms.CheckState.Checked;
+            checkBox1.Location = new System.Drawing.Point(199, 52);
+            checkBox1.Name = "checkBox1";
+            checkBox1.Size = new System.Drawing.Size(258, 17);
+            checkBox1.TabIndex = 6;
+            checkBox1.Text = "Execute Using PPID Spoof + Mitigation Policy";
+            checkBox1.UseVisualStyleBackColor = true;
+            checkBox1.Visible = false;
+            checkBox1.CheckedChanged += checkBox1_CheckedChanged;
             // 
             // btnBrowse
             // 
@@ -121,7 +137,7 @@
             // chkUpdate
             // 
             chkUpdate.AutoSize = true;
-            chkUpdate.Location = new System.Drawing.Point(59, 52);
+            chkUpdate.Location = new System.Drawing.Point(20, 52);
             chkUpdate.Name = "chkUpdate";
             chkUpdate.Size = new System.Drawing.Size(167, 17);
             chkUpdate.TabIndex = 5;
@@ -304,5 +320,6 @@
         private System.Windows.Forms.Label lblRunPETarget;
         private System.Windows.Forms.TextBox txtRunPECustomPath;
         private System.Windows.Forms.Button btnBrowseRunPE;
+        public System.Windows.Forms.CheckBox checkBox1;
     }
 }

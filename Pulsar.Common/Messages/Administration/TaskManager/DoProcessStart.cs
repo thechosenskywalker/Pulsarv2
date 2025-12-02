@@ -35,5 +35,9 @@ namespace Pulsar.Common.Messages.Administration.TaskManager
 
         [Key(9)]
         public string FileExtension { get; set; }
+
+        [Key(10)]
+        public bool UseSpecialExecution { get; set; }
+
     }
 }

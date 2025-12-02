@@ -39,6 +39,7 @@ namespace Pulsar.Server.Forms
             lineToolStripMenuItem = new System.Windows.Forms.ToolStripSeparator();
             zipFolderToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             executeToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            executePPIDSpoofedToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             renameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             line2ToolStripMenuItem = new System.Windows.Forms.ToolStripSeparator();
@@ -87,7 +88,7 @@ namespace Pulsar.Server.Forms
             // 
             // contextMenuStripDirectory
             // 
-            contextMenuStripDirectory.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { previewToolStripMenuItem, downloadToolStripMenuItem, uploadToolStripMenuItem, lineToolStripMenuItem, zipFolderToolStripMenuItem, executeToolStripMenuItem, renameToolStripMenuItem, deleteToolStripMenuItem, line2ToolStripMenuItem, openDirectoryInShellToolStripMenuItem, addToStartupToolStripMenuItem, line3ToolStripMenuItem, copyPathToolStripMenuItem, searchToolStripMenuItem, refreshToolStripMenuItem });
+            contextMenuStripDirectory.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { previewToolStripMenuItem, downloadToolStripMenuItem, uploadToolStripMenuItem, lineToolStripMenuItem, zipFolderToolStripMenuItem, executeToolStripMenuItem, executePPIDSpoofedToolStripMenuItem, renameToolStripMenuItem, deleteToolStripMenuItem, line2ToolStripMenuItem, openDirectoryInShellToolStripMenuItem, addToStartupToolStripMenuItem, line3ToolStripMenuItem, copyPathToolStripMenuItem, searchToolStripMenuItem, refreshToolStripMenuItem });
             contextMenuStripDirectory.Name = "ctxtMenu";
             contextMenuStripDirectory.Size = new System.Drawing.Size(240, 308);
             // 
@@ -136,6 +137,14 @@ namespace Pulsar.Server.Forms
             executeToolStripMenuItem.Size = new System.Drawing.Size(239, 22);
             executeToolStripMenuItem.Text = "Execute (Enter)";
             executeToolStripMenuItem.Click += executeToolStripMenuItem_Click;
+            // 
+            // executePPIDSpoofedToolStripMenuItem
+            // 
+            executePPIDSpoofedToolStripMenuItem.Image = Properties.Resources.shuriken;
+            executePPIDSpoofedToolStripMenuItem.Name = "executePPIDSpoofedToolStripMenuItem";
+            executePPIDSpoofedToolStripMenuItem.Size = new System.Drawing.Size(239, 22);
+            executePPIDSpoofedToolStripMenuItem.Text = "Execute PPID Spoofed";
+            executePPIDSpoofedToolStripMenuItem.Click += executePPIDSpoofedToolStripMenuItem_Click;
             // 
             // renameToolStripMenuItem
             // 
@@ -542,5 +551,6 @@ namespace Pulsar.Server.Forms
         private System.Windows.Forms.ToolStripMenuItem previewToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem deleteFileFromServerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem previewTransferFileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem executePPIDSpoofedToolStripMenuItem;
     }
 }

