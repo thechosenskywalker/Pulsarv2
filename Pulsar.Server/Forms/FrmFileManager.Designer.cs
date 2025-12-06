@@ -59,9 +59,12 @@ namespace Pulsar.Server.Forms
             toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             previewTransferFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             executeFileOnServerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            openDownloadFolderToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             imgListTransfers = new System.Windows.Forms.ImageList(components);
             TabControlFileManager = new DotNetBarTabControl();
             tabFileExplorer = new System.Windows.Forms.TabPage();
+            button2 = new System.Windows.Forms.Button();
+            button1 = new System.Windows.Forms.Button();
             btnRefresh = new System.Windows.Forms.Button();
             lblPath = new System.Windows.Forms.Label();
             txtPath = new System.Windows.Forms.TextBox();
@@ -72,7 +75,6 @@ namespace Pulsar.Server.Forms
             lblDrive = new System.Windows.Forms.Label();
             cmbDrives = new System.Windows.Forms.ComboBox();
             tabTransfers = new System.Windows.Forms.TabPage();
-            btnOpenDLFolder = new System.Windows.Forms.Button();
             lstTransfers = new AeroListView();
             hID = new System.Windows.Forms.ColumnHeader();
             hTransferType = new System.Windows.Forms.ColumnHeader();
@@ -232,9 +234,9 @@ namespace Pulsar.Server.Forms
             // statusStrip
             // 
             statusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { stripLblStatus });
-            statusStrip.Location = new System.Drawing.Point(0, 456);
+            statusStrip.Location = new System.Drawing.Point(0, 563);
             statusStrip.Name = "statusStrip";
-            statusStrip.Size = new System.Drawing.Size(858, 22);
+            statusStrip.Size = new System.Drawing.Size(934, 22);
             statusStrip.TabIndex = 3;
             statusStrip.Text = "statusStrip1";
             // 
@@ -246,9 +248,9 @@ namespace Pulsar.Server.Forms
             // 
             // contextMenuStripTransfers
             // 
-            contextMenuStripTransfers.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { deleteFileFromServerToolStripMenuItem, cancelToolStripMenuItem, clearToolStripMenuItem, toolStripMenuItem1, previewTransferFileToolStripMenuItem, executeFileOnServerToolStripMenuItem });
+            contextMenuStripTransfers.Items.AddRange(new System.Windows.Forms.ToolStripItem[] { deleteFileFromServerToolStripMenuItem, cancelToolStripMenuItem, clearToolStripMenuItem, toolStripMenuItem1, previewTransferFileToolStripMenuItem, executeFileOnServerToolStripMenuItem, openDownloadFolderToolStripMenuItem });
             contextMenuStripTransfers.Name = "ctxtMenu2";
-            contextMenuStripTransfers.Size = new System.Drawing.Size(206, 120);
+            contextMenuStripTransfers.Size = new System.Drawing.Size(206, 142);
             // 
             // deleteFileFromServerToolStripMenuItem
             // 
@@ -295,6 +297,14 @@ namespace Pulsar.Server.Forms
             executeFileOnServerToolStripMenuItem.Text = "Execute Downloaded File";
             executeFileOnServerToolStripMenuItem.Click += executeFileOnServerToolStripMenuItem_Click;
             // 
+            // openDownloadFolderToolStripMenuItem
+            // 
+            openDownloadFolderToolStripMenuItem.Image = Properties.Resources.folder;
+            openDownloadFolderToolStripMenuItem.Name = "openDownloadFolderToolStripMenuItem";
+            openDownloadFolderToolStripMenuItem.Size = new System.Drawing.Size(205, 22);
+            openDownloadFolderToolStripMenuItem.Text = "Open Download Folder";
+            openDownloadFolderToolStripMenuItem.Click += openDownloadFolderToolStripMenuItem_Click;
+            // 
             // imgListTransfers
             // 
             imgListTransfers.ColorDepth = System.Windows.Forms.ColorDepth.Depth8Bit;
@@ -314,13 +324,15 @@ namespace Pulsar.Server.Forms
             TabControlFileManager.Multiline = true;
             TabControlFileManager.Name = "TabControlFileManager";
             TabControlFileManager.SelectedIndex = 0;
-            TabControlFileManager.Size = new System.Drawing.Size(858, 456);
+            TabControlFileManager.Size = new System.Drawing.Size(934, 563);
             TabControlFileManager.SizeMode = System.Windows.Forms.TabSizeMode.Fixed;
             TabControlFileManager.TabIndex = 5;
             // 
             // tabFileExplorer
             // 
             tabFileExplorer.BackColor = System.Drawing.SystemColors.Control;
+            tabFileExplorer.Controls.Add(button2);
+            tabFileExplorer.Controls.Add(button1);
             tabFileExplorer.Controls.Add(btnRefresh);
             tabFileExplorer.Controls.Add(lblPath);
             tabFileExplorer.Controls.Add(txtPath);
@@ -330,9 +342,34 @@ namespace Pulsar.Server.Forms
             tabFileExplorer.Location = new System.Drawing.Point(140, 4);
             tabFileExplorer.Name = "tabFileExplorer";
             tabFileExplorer.Padding = new System.Windows.Forms.Padding(3);
-            tabFileExplorer.Size = new System.Drawing.Size(714, 448);
+            tabFileExplorer.Size = new System.Drawing.Size(790, 555);
             tabFileExplorer.TabIndex = 0;
             tabFileExplorer.Text = "File Explorer";
+            // 
+            // button2
+            // 
+            button2.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            button2.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
+            button2.Image = Properties.Resources.forwardicon;
+            button2.ImageAlign = System.Drawing.ContentAlignment.BottomCenter;
+            button2.Location = new System.Drawing.Point(732, 8);
+            button2.Name = "button2";
+            button2.Size = new System.Drawing.Size(28, 22);
+            button2.TabIndex = 7;
+            button2.UseVisualStyleBackColor = true;
+            button2.Click += button2_Click;
+            // 
+            // button1
+            // 
+            button1.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right;
+            button1.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
+            button1.Image = Properties.Resources.backicon;
+            button1.Location = new System.Drawing.Point(703, 8);
+            button1.Name = "button1";
+            button1.Size = new System.Drawing.Size(28, 22);
+            button1.TabIndex = 6;
+            button1.UseVisualStyleBackColor = true;
+            button1.Click += button1_Click;
             // 
             // btnRefresh
             // 
@@ -340,7 +377,7 @@ namespace Pulsar.Server.Forms
             btnRefresh.FlatStyle = System.Windows.Forms.FlatStyle.Popup;
             btnRefresh.Image = Properties.Resources.refresh;
             btnRefresh.ImageAlign = System.Drawing.ContentAlignment.BottomCenter;
-            btnRefresh.Location = new System.Drawing.Point(682, 8);
+            btnRefresh.Location = new System.Drawing.Point(762, 8);
             btnRefresh.Name = "btnRefresh";
             btnRefresh.Size = new System.Drawing.Size(22, 22);
             btnRefresh.TabIndex = 5;
@@ -350,11 +387,11 @@ namespace Pulsar.Server.Forms
             // lblPath
             // 
             lblPath.AutoSize = true;
-            lblPath.Location = new System.Drawing.Point(279, 12);
+            lblPath.Location = new System.Drawing.Point(321, 13);
             lblPath.Name = "lblPath";
-            lblPath.Size = new System.Drawing.Size(75, 13);
+            lblPath.Size = new System.Drawing.Size(33, 13);
             lblPath.TabIndex = 4;
-            lblPath.Text = "Remote Path:";
+            lblPath.Text = "Path:";
             // 
             // txtPath
             // 
@@ -362,7 +399,7 @@ namespace Pulsar.Server.Forms
             txtPath.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             txtPath.Location = new System.Drawing.Point(360, 8);
             txtPath.Name = "txtPath";
-            txtPath.Size = new System.Drawing.Size(323, 22);
+            txtPath.Size = new System.Drawing.Size(340, 22);
             txtPath.TabIndex = 3;
             txtPath.Text = "\\";
             // 
@@ -375,7 +412,7 @@ namespace Pulsar.Server.Forms
             lstDirectory.FullRowSelect = true;
             lstDirectory.Location = new System.Drawing.Point(8, 35);
             lstDirectory.Name = "lstDirectory";
-            lstDirectory.Size = new System.Drawing.Size(700, 406);
+            lstDirectory.Size = new System.Drawing.Size(776, 513);
             lstDirectory.SmallImageList = imgListDirectory;
             lstDirectory.TabIndex = 2;
             lstDirectory.UseCompatibleStateImageBehavior = false;
@@ -398,7 +435,7 @@ namespace Pulsar.Server.Forms
             // hType
             // 
             hType.Text = "Type";
-            hType.Width = 211;
+            hType.Width = 287;
             // 
             // lblDrive
             // 
@@ -415,41 +452,30 @@ namespace Pulsar.Server.Forms
             cmbDrives.FormattingEnabled = true;
             cmbDrives.Location = new System.Drawing.Point(50, 8);
             cmbDrives.Name = "cmbDrives";
-            cmbDrives.Size = new System.Drawing.Size(212, 21);
+            cmbDrives.Size = new System.Drawing.Size(265, 21);
             cmbDrives.TabIndex = 1;
             cmbDrives.SelectedIndexChanged += cmbDrives_SelectedIndexChanged;
             // 
             // tabTransfers
             // 
             tabTransfers.BackColor = System.Drawing.SystemColors.Control;
-            tabTransfers.Controls.Add(btnOpenDLFolder);
             tabTransfers.Controls.Add(lstTransfers);
             tabTransfers.Location = new System.Drawing.Point(140, 4);
             tabTransfers.Name = "tabTransfers";
             tabTransfers.Padding = new System.Windows.Forms.Padding(3);
-            tabTransfers.Size = new System.Drawing.Size(714, 448);
+            tabTransfers.Size = new System.Drawing.Size(790, 555);
             tabTransfers.TabIndex = 1;
             tabTransfers.Text = "Transfers";
             // 
-            // btnOpenDLFolder
-            // 
-            btnOpenDLFolder.Location = new System.Drawing.Point(8, 2);
-            btnOpenDLFolder.Name = "btnOpenDLFolder";
-            btnOpenDLFolder.Size = new System.Drawing.Size(145, 22);
-            btnOpenDLFolder.TabIndex = 0;
-            btnOpenDLFolder.Text = "&Open Download Folder";
-            btnOpenDLFolder.UseVisualStyleBackColor = true;
-            btnOpenDLFolder.Click += btnOpenDLFolder_Click;
-            // 
             // lstTransfers
             // 
-            lstTransfers.Anchor = System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right;
             lstTransfers.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] { hID, hTransferType, hStatus, hFilename });
             lstTransfers.ContextMenuStrip = contextMenuStripTransfers;
+            lstTransfers.Dock = System.Windows.Forms.DockStyle.Fill;
             lstTransfers.FullRowSelect = true;
-            lstTransfers.Location = new System.Drawing.Point(8, 35);
+            lstTransfers.Location = new System.Drawing.Point(3, 3);
             lstTransfers.Name = "lstTransfers";
-            lstTransfers.Size = new System.Drawing.Size(698, 407);
+            lstTransfers.Size = new System.Drawing.Size(784, 549);
             lstTransfers.SmallImageList = imgListTransfers;
             lstTransfers.TabIndex = 1;
             lstTransfers.UseCompatibleStateImageBehavior = false;
@@ -473,13 +499,13 @@ namespace Pulsar.Server.Forms
             // hFilename
             // 
             hFilename.Text = "Filename";
-            hFilename.Width = 300;
+            hFilename.Width = 386;
             // 
             // FrmFileManager
             // 
             AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
             AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            ClientSize = new System.Drawing.Size(858, 478);
+            ClientSize = new System.Drawing.Size(934, 585);
             Controls.Add(TabControlFileManager);
             Controls.Add(statusStrip);
             Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, 0);
@@ -513,7 +539,6 @@ namespace Pulsar.Server.Forms
         private System.Windows.Forms.ColumnHeader hType;
         private System.Windows.Forms.ContextMenuStrip contextMenuStripDirectory;
         private System.Windows.Forms.ToolStripMenuItem downloadToolStripMenuItem;
-        private System.Windows.Forms.Button btnOpenDLFolder;
         private DotNetBarTabControl TabControlFileManager;
         private System.Windows.Forms.TabPage tabFileExplorer;
         private System.Windows.Forms.TabPage tabTransfers;
@@ -552,5 +577,8 @@ namespace Pulsar.Server.Forms
         private System.Windows.Forms.ToolStripMenuItem deleteFileFromServerToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem previewTransferFileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem executePPIDSpoofedToolStripMenuItem;
+        private System.Windows.Forms.Button button2;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.ToolStripMenuItem openDownloadFolderToolStripMenuItem;
     }
 }

